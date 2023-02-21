@@ -1,0 +1,1 @@
+"..\Source\Application\EEPROM_Application.c" OPTIMIZE (9,SPEED) BROWSE INCDIR(..\Source\Application;..\Source\Device_Driver;..\Source\System;D:\Keil\C51\INC\STC) DEBUG OBJECTEXTEND PRINT(.\Listings\EEPROM_Application.lst) TABS (2) OBJECT(..\Output\EEPROM_Application.obj)

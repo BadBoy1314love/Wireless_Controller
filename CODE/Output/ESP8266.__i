@@ -1,0 +1,1 @@
+"..\Source\Application\ESP8266.c" OPTIMIZE (9,SPEED) BROWSE INCDIR(..\Source\Application;..\Source\Device_Driver;..\Source\System;D:\Keil\C51\INC\STC) DEBUG OBJECTEXTEND PRINT(.\Listings\ESP8266.lst) TABS (2) OBJECT(..\Output\ESP8266.obj)

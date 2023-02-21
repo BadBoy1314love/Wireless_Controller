@@ -1,0 +1,308 @@
+C51 COMPILER V9.60.0.0   SCH51                                                             04/12/2022 23:23:43 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE SCH51
+OBJECT MODULE PLACED IN ..\Output\Sch51.obj
+COMPILER INVOKED BY: C:\PersonalProgramFiles\Keil5\C51\BIN\C51.EXE ..\Source\System\Sch51.c OPTIMIZE(8,SPEED) BROWSE INC
+                    -DIR(..\Source\Application;..\Source\Device_Driver;..\Source\System) DEBUG OBJECTEXTEND PRINT(.\Listings\Sch51.lst) TABS(
+                    -2) OBJECT(..\Output\Sch51.obj)
+
+line level    source
+
+   1          /*------------------------------------------------------------------*-
+   2          
+   3             SCH51.C (v1.00) 
+   4          
+   5            ------------------------------------------------------------------
+   6          
+   7             *** 这些是核心调度器函数 ***
+   8             --- 这些功能可用于所有8051设备 ---
+   9          
+  10             *** SCH_MAX_TASKS *必须*由用户设置 ***
+  11             --- 参见“Sch51.H” ---
+  12          
+  13             *** 包括(可选)节能模式 ***
+  14             --- 您必须确保已适应掉电模式 ---
+  15             --- 匹配您选择的设备(或完全禁用) ---
+  16          
+  17          -*------------------------------------------------------------------*/
+  18          
+  19          #include "Config.h"
+  20          #include "Sch51.h"
+  21          
+  22          // ------ 公共变量定义 ------------------------------
+  23          
+  24          sTask SCH_tasks_G[SCH_MAX_TASKS];   // 任务数组
+  25          
+  26          
+  27          // ------ 私有函数原型 ------------------------------
+  28          
+  29          static void SCH_Manual_Timer0_Reload(void);
+  30          
+  31          
+  32          // ------ 私有变量 ----------------------------------------
+  33          
+  34          
+  35          /*------------------------------------------------------------------*-
+  36          
+  37            SCH_Manual_Timer0_Reload()
+  38          
+  39            这个调度器使用一个(手动重新加载的)16位计时器。
+  40            手动重新加载意味着所有的时间都是近似的。 
+  41            此调度器不适用于以下应用程序
+  42            准确的时间是必需的!!
+  43            在此函数中执行计时器重新加载. 
+  44           
+  45          -*------------------------------------------------------------------*/
+  46          void SCH_Manual_Timer0_Reload()
+  47          { 
+  48   1        TR0 = 0;    //定时器0停止计时
+  49   1        TL0 = 0x66;   //设置定时初始值
+  50   1        TH0 = 0xFC;   //设置定时初始值
+  51   1        TR0 = 1;    //定时器0开始计时
+  52   1      }
+  53          
+C51 COMPILER V9.60.0.0   SCH51                                                             04/12/2022 23:23:43 PAGE 2   
+
+  54          /*------------------------------------------------------------------*-
+  55          
+  56            SCH_Start()
+  57          
+  58            通过启用中断启动调度程序。
+  59          
+  60            注意:通常在添加所有常规任务后调用，
+  61                 以保持任务同步。
+  62          
+  63            注意:只有调度器中断应该被启用!!
+  64           
+  65          -*------------------------------------------------------------------*/
+  66          void SCH_Start(void) 
+  67             {
+  68   1         EA = 1;
+  69   1         }
+  70          
+  71          
+  72          /*------------------------------------------------------------------*-
+  73          
+  74            SCH_Init_T0()
+  75          
+  76            调度程序初始化函数。
+  77            准备调度程序数据结构，并按要求的速率设置计时器中断。
+  78            必须在使用调度器之前调用此函数。
+  79          
+  80          -*------------------------------------------------------------------*/
+  81          void SCH_Init_T0(void) 
+  82             {
+  83   1         tByte i;
+  84   1      
+  85   1         for (i = 0; i < SCH_MAX_TASKS; i++) 
+  86   1            {
+  87   2            SCH_Delete_Task(i);
+  88   2            }
+  89   1      
+  90   1      
+  91   1         // 使用定时器0,16位手动重装
+  92   1         TMOD &= 0xF0; // 清除所有T0位(T1保持不变)
+  93   1         TMOD |= 0x01; // 设置所需T0位(T1保持不变)
+  94   1      
+  95   1         // 设置定时器重装值
+  96   1         SCH_Manual_Timer0_Reload();
+  97   1      
+  98   1         //  启用定时器0中断
+  99   1         ET0  = 1;
+ 100   1         }
+ 101          
+ 102          /*------------------------------------------------------------------*-
+ 103          
+ 104            SCH_Update
+ 105          
+ 106            这是调度程序ISR。
+ 107            它的调用速率由SCH_Init_T0()中的计时器设置决定。
+ 108            此版本由0定时器中断触发。
+ 109           
+ 110          -*------------------------------------------------------------------*/
+ 111          void SCH_Update(void)
+ 112             {
+ 113   1         tByte Index;
+ 114   1         SCH_Manual_Timer0_Reload();  //定时器0重装
+ 115   1      
+C51 COMPILER V9.60.0.0   SCH51                                                             04/12/2022 23:23:43 PAGE 3   
+
+ 116   1         // 注:计算单位为*TICKS*(不是毫秒)
+ 117   1         for (Index = 0; Index < SCH_MAX_TASKS; Index++)
+ 118   1            {
+ 119   2            if (SCH_tasks_G[Index].pTask) // 检查这个位置是否有任务
+ 120   2               {
+ 121   3               if (SCH_tasks_G[Index].Delay == 0)
+ 122   3                  {
+ 123   4                  // 任务即将运行
+ 124   4                  SCH_tasks_G[Index].RunMe += 1;  // Inc. the 'Run Me' flag
+ 125   4      
+ 126   4                  if (SCH_tasks_G[Index].Period)
+ 127   4                     {
+ 128   5                     // 安排周期性任务再次运行
+ 129   5                     SCH_tasks_G[Index].Delay = SCH_tasks_G[Index].Period;
+ 130   5                     }
+ 131   4                  }
+ 132   3               else
+ 133   3                  {
+ 134   4                  // 还没有准备好运行:只需减少延迟
+ 135   4                  SCH_tasks_G[Index].Delay -= 1;
+ 136   4                  }
+ 137   3               }         
+ 138   2            }
+ 139   1         } 
+ 140             
+ 141          /*------------------------------------------------------------------*-
+ 142          
+ 143            SCH_Dispatch_Tasks()
+ 144          
+ 145            这是'dispatcher'函数。当一个任务(函数)
+ 146          ， SCH_Dispatch_Tasks()将运行它。
+ 147          这个函数必须从主循环中(重复地)调用。
+ 148          
+ 149          -*------------------------------------------------------------------*/
+ 150          void SCH_Dispatch_Tasks(void) 
+ 151             {
+ 152   1         tByte Index;
+ 153   1         for (Index = 0; Index < SCH_MAX_TASKS; Index++) // 调度(运行)下一个任务(如果准备好了)
+ 154   1            {
+ 155   2            if (SCH_tasks_G[Index].RunMe > 0) 
+ 156   2               {
+ 157   3               (*SCH_tasks_G[Index].pTask)();  // 运行的任务
+ 158   3               SCH_tasks_G[Index].RunMe -= 1;   // 重置 / 减少 RunMe 标志
+ 159   3      
+ 160   3               //定时任务将自动重新运行
+ 161   3               // -如果这是一个'单次'任务，从数组中删除它
+ 162   3               if (SCH_tasks_G[Index].Period == 0)
+ 163   3                  {
+ 164   4                  SCH_Delete_Task(Index);
+ 165   4                  }
+ 166   3               }
+ 167   2            }   
+ 168   1         }
+ 169          
+ 170          /*------------------------------------------------------------------*-
+ 171          
+ 172            SCH_Add_Task()
+ 173          
+ 174            使任务(函数)定期执行
+ 175            或者在用户定义的延迟之后
+ 176          
+ 177            Fn_P   - 要调度的函数的名称。
+C51 COMPILER V9.60.0.0   SCH51                                                             04/12/2022 23:23:43 PAGE 4   
+
+ 178                     注意:所有计划函数必须是'void, void' -
+ 179                     也就是说，它们必须不带参数，并且有
+ 180                     一个void返回类型。
+ 181                             
+ 182            DELAY  - 任务第一次执行前的间隔(TICKS)
+ 183          
+ 184            PERIOD - 如果'PERIOD'为0，函数只被调用一次，
+ 185                     时间由'DELAY'决定。如果PERIOD不为零，
+ 186                     然后以一定的间隔重复调用该函数
+ 187                     由PERIOD的值决定(参见下面的示例
+ 188                     这应该有助于澄清这一点)。
+ 189          
+ 190          
+ 191            返回值:  
+ 192          
+ 193            返回在任务数组中添加任务的位置。
+ 194            如果返回值是SCH_MAX_TASKS，那么任务不能添加到数组中(因为空间不足)。
+ 195            如果返回值是< SCH_MAX_TASKS，则任务被成功添加。
+ 196          
+ 197            注意:这个返回值可能是必需的，如果一个任务随后要被删除-参见SCH_Delete_Task()。
+ 198          
+ 199            例子:
+ 200          
+ 201            Task_ID = SCH_Add_Task(Do_X,1000,0);
+ 202            函数Do_X()将在1000次 sch ticks 后执行一次。           
+ 203          
+ 204            Task_ID = SCH_Add_Task(Do_X,0,1000);
+ 205            定期执行的函数Do_X()，每1000个 sch ticks 。            
+ 206          
+ 207            Task_ID = SCH_Add_Task(Do_X,300,1000);
+ 208            使函数Do_X()定期执行，每1000次 ticks。
+ 209            任务将首先在T = 300 ticks时执行，然后是1300,2300，等等。            
+ 210           
+ 211          -*------------------------------------------------------------------*/
+ 212          tByte SCH_Add_Task(void (code * pFunction)(), 
+ 213                             const tWord DELAY, 
+ 214                             const tWord PERIOD)    
+ 215             {
+ 216   1         tByte Index = 0;
+ 217   1         
+ 218   1         // 首先在数中找到一个缺口(如果有的话)
+ 219   1         while ((SCH_tasks_G[Index].pTask != 0) && (Index < SCH_MAX_TASKS))
+ 220   1            {
+ 221   2            Index++;
+ 222   2            } 
+ 223   1         
+ 224   1         // 我们到达名单的末尾了吗?   
+ 225   1         if (Index == SCH_MAX_TASKS)  // 如果任务列表已满
+ 226   1            {
+ 227   2            return SCH_MAX_TASKS;  
+ 228   2            }
+ 229   1            
+ 230   1         // 如果能运行到这里，说明任务队列中有空间
+ 231   1         SCH_tasks_G[Index].pTask  = pFunction;
+ 232   1           
+ 233   1         SCH_tasks_G[Index].Delay  = DELAY;
+ 234   1         SCH_tasks_G[Index].Period = PERIOD;
+ 235   1      
+ 236   1         SCH_tasks_G[Index].RunMe  = 0;
+ 237   1      
+ 238   1         return Index; // 返回任务的位置(允许稍后删除)
+ 239   1         }
+C51 COMPILER V9.60.0.0   SCH51                                                             04/12/2022 23:23:43 PAGE 5   
+
+ 240          
+ 241          /*------------------------------------------------------------------*-
+ 242          
+ 243            SCH_Delete_Task()
+ 244          
+ 245            从调度程序中删除任务。注意这是
+ 246            *不*从内存中删除相关函数:
+ 247            它只是意味着它不再被调度器调用。
+ 248           
+ 249            TASK_INDEX - The task index.  由SCH_Add_Task()提供。
+ 250          
+ 251            返回值 : ETURN_ERROR 1 或 RETURN_NORMAL 0
+ 252          
+ 253          -*------------------------------------------------------------------*/
+ 254          bit SCH_Delete_Task(const tByte TASK_INDEX) 
+ 255             {
+ 256   1         bit Return_code;
+ 257   1      
+ 258   1         if (SCH_tasks_G[TASK_INDEX].pTask == 0)  // 这个位置没有任务…
+ 259   1            {
+ 260   2            Return_code = 1;        
+ 261   2            }
+ 262   1         else
+ 263   1            {
+ 264   2            Return_code = 0;
+ 265   2            }      
+ 266   1         
+ 267   1         SCH_tasks_G[TASK_INDEX].pTask   = 0x0000;
+ 268   1         SCH_tasks_G[TASK_INDEX].Delay   = 0;
+ 269   1         SCH_tasks_G[TASK_INDEX].Period  = 0;
+ 270   1      
+ 271   1         SCH_tasks_G[TASK_INDEX].RunMe   = 0;
+ 272   1      
+ 273   1         return Return_code;       // 返回状态
+ 274   1         }
+ 275          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    405    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     14       4
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

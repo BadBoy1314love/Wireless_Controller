@@ -1,0 +1,50 @@
+C51 COMPILER V9.60.0.0   TIMER                                                             08/04/2022 10:51:41 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE TIMER
+OBJECT MODULE PLACED IN ..\Output\Timer.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE ..\Source\Application\Timer.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\Source\App
+                    -lication;..\Source\Device_Driver;..\Source\System;D:\Keil\C51\INC\STC) DEBUG OBJECTEXTEND PRINT(.\Listings\Timer.lst) TA
+                    -BS(2) OBJECT(..\Output\Timer.obj)
+
+line level    source
+
+   1          #include "Timer.h"
+   2          #include "config.h"
+   3          
+   4          void Timer1Init(void)   //20微秒@11.0592MHz
+   5          {
+   6   1        AUXR |= 0x40;   //定时器时钟1T模式
+   7   1        TMOD &= 0x0F;   //设置定时器模式
+   8   1        TMOD |= 0x10;   //设置定时器模式
+   9   1        TL1 = 0x66;   //设置定时初始值
+  10   1        TH1 = 0xEA;   //设置定时初始值
+  11   1        TF1 = 0;    //清除TF1标志
+  12   1        TR1 = 1;    //定时器1开始计时
+  13   1        //  ET1 = 1;    //开定时器1中断
+  14   1        ET1 = 0;    //关闭定时器1中断
+  15   1      }
+  16          
+  17          void Timer1_Reload()  //定时器1重装
+  18          {
+  19   1        TF1 = 0;    //清除TF1标志
+  20   1        TR1 = 0;    //定时器0停止计时
+  21   1        TL1 = 0x66;   //设置定时初始值
+  22   1        TH1 = 0xEA;   //设置定时初始值
+  23   1        TR1 = 1;    //定时器0开始计时
+  24   1      }
+  25          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     35    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,1 @@
+"..\Source\Device_Driver\Buzzer.c" OPTIMIZE (9,SPEED) BROWSE INCDIR(..\Source\Application;..\Source\Device_Driver;..\Source\System;D:\Keil\C51\INC\STC) DEBUG OBJECTEXTEND PRINT(.\Listings\Buzzer.lst) TABS (2) OBJECT(..\Output\Buzzer.obj)

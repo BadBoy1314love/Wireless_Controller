@@ -1,0 +1,43 @@
+Change Component Comment : Designator=C6 Old Comment=104 New Comment=22pf
+Change Component Comment : Designator=C7 Old Comment=104 New Comment=22pf
+Added Component: Designator=J1(Type-C_16pin)
+Added Component: Designator=R16(RS 1/4W)
+Add component (AddParameter): Name = "BOM名称"; Value = "色环电阻"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "下单链接"; Value = "https://item.taobao.com/item.htm?ft=t&id=613637044352"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "淘宝ID"; Value = "小糖豆的小窝窝"; VariantName = "[No Variations]"
+Added Component: Designator=R17(RS 1/4W)
+Add component (AddParameter): Name = "BOM名称"; Value = "色环电阻"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "下单链接"; Value = "https://item.taobao.com/item.htm?ft=t&id=613637044352"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "淘宝ID"; Value = "小糖豆的小窝窝"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=GND Pin=J1-1
+Added Pin To Net: NetName=NetC3_2 Pin=J1-2
+Added Pin To Net: NetName=NetIC2_2 Pin=J1-5
+Added Pin To Net: NetName=NetIC2_1 Pin=J1-6
+Added Pin To Net: NetName=NetIC2_2 Pin=J1-7
+Added Pin To Net: NetName=NetIC2_1 Pin=J1-8
+Added Pin To Net: NetName=NetC3_2 Pin=J1-11
+Added Pin To Net: NetName=GND Pin=J1-12
+Added Pin To Net: NetName=GND Pin=R16-2
+Added Pin To Net: NetName=GND Pin=R17-2
+Change Net Name : Old Net Name=NetJP7_3 New Net Name=NetLCD1_3
+Change Net Name : Old Net Name=NetJP7_4 New Net Name=NetLCD1_4
+Change Net Name : Old Net Name=NetJP7_5 New Net Name=NetLCD1_5
+Change Net Name : Old Net Name=NetJP7_6 New Net Name=NetLCD1_6
+Change Net Name : Old Net Name=NetJP7_7 New Net Name=NetLCD1_7
+Change Net Name : Old Net Name=NetJP7_8 New Net Name=NetLCD1_8
+Change Net Name : Old Net Name=NetJP7_9 New Net Name=NetLCD1_9
+Change Net Name : Old Net Name=NetJP7_10 New Net Name=NetLCD1_10
+Change Net Name : Old Net Name=NetJP7_11 New Net Name=NetLCD1_11
+Change Net Name : Old Net Name=NetJP7_12 New Net Name=NetLCD1_12
+Change Net Name : Old Net Name=NetJP7_13 New Net Name=NetLCD1_13
+Change Net Name : Old Net Name=NetJP7_14 New Net Name=NetLCD1_14
+Change Net Name : Old Net Name=NetJP7_15 New Net Name=NetLCD1_15
+Added Pin To Net: NetName=NetJ1_4 Pin=J1-4
+Added Pin To Net: NetName=NetJ1_4 Pin=R16-1
+Added Net: Name=NetJ1_4
+Added Pin To Net: NetName=NetJ1_10 Pin=J1-10
+Added Pin To Net: NetName=NetJ1_10 Pin=R17-1
+Added Net: Name=NetJ1_10
+Added Member To Class: ClassName=工控板_V1.1 Member=Component J1 Type-C
+Added Member To Class: ClassName=工控板_V1.1 Member=Component R16 5.1K
+Added Member To Class: ClassName=工控板_V1.1 Member=Component R17 5.1K

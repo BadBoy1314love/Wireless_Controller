@@ -1,0 +1,843 @@
+C51 COMPILER V9.60.0.0   ESP8266                                                           08/09/2022 01:28:11 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE ESP8266
+OBJECT MODULE PLACED IN ..\Output\ESP8266.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE ..\Source\Application\ESP8266.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\Source\A
+                    -pplication;..\Source\Device_Driver;..\Source\System;D:\Keil\C51\INC\STC) DEBUG OBJECTEXTEND PRINT(.\Listings\ESP8266.lst
+                    -) TABS(2) OBJECT(..\Output\ESP8266.obj)
+
+line level    source
+
+   1          /******************************************************************************/
+   2          // 包含头文件
+   3          /******************************************************************************/
+   4          #include "Config.h"
+   5          #include "ESP8266.h"
+   6          #include "UART.h"
+   7          #include "LCD1602.h"
+   8          #include "Delay.h"
+   9          #include "EEPROM_Application.h"
+  10          
+  11          /*单片机软件复位下载*/
+  12          uint8 xdata UART_0x7F_Count=0;  //串口0x7F计数变量
+  13          
+  14          /*STA模式与AP模式的设置信息*/
+  15          u8 xdata STA_MODE_Table[150]={"AT+CWJAP_CUR=\"TP-LINK_847A\",\"asdfghjkl\"\r\n             "};
+  16          u8 xdata AP_MODE_Table[150]={"AT+CWSAP_CUR=\"Wireless_Controller\",\"asdfghjkl\",3,4\r\n        "};
+  17          
+  18          /*设置TCP服务器信息*/
+  19          u8 xdata ATCIPSERVER[22]="AT+CIPSERVER=1,00001\r\n";
+  20          
+  21          s32 xdata TcpServerPort = 1;
+  22          
+  23          u8 xdata RESET_COUNTER = 0;
+  24          u8 xdata STA_MODE_COUNTER = 0;
+  25          u8 xdata URL_COUNTER = 0;
+  26          
+  27          /*从网页获取的日期和时间数据*/
+  28          u8 xdata DateTable[]={"2022/01/01"};
+  29          u8 xdata TimeTable[]={"00:00:00"};
+  30          
+  31          /*时间存储变量*/
+  32          extern s8 hour,minute,second;
+  33          s16 Year=2022;
+  34          s8 Month=1;
+  35          s8 Day=1;
+  36          
+  37          //从网页获取时间数据超时计数器
+  38          u8 xdata GET_TIME_COUNTER = 0;  //GET_TIME计数器
+  39          
+  40          //IP数据接收数组
+  41          u8 xdata STAIPTable[16]="                "; 
+  42          u8 xdata APIPTable[16]="                "; 
+  43          
+  44          /*串口数据接收数组*/
+  45          uint8 xdata rcvTable[200];
+  46          
+  47          //判断8266的返回信息的标志位(判断命令执行是否完成)
+  48          uint8 xdata ESP8266_Return_Value = 0;
+  49          
+  50          //任务控制
+  51          extern bit Task1;
+  52          extern bit Task2;
+  53          extern bit Task3;
+C51 COMPILER V9.60.0.0   ESP8266                                                           08/09/2022 01:28:11 PAGE 2   
+
+  54          extern bit Task4;
+  55          extern bit Task5;
+  56          extern bit Task6;
+  57          
+  58          extern u8 code STA_IP_ADDRESS[];
+  59          extern u8 code AP_IP_ADDRESS[];
+  60          
+  61          extern u8 code TCP_SERVER_PORT[];  // ="TCP SERVER PORT:";
+  62          extern u8 xdata TCP_PORT_Number[]; //  ="-->  65535   <--";
+  63          
+  64          /******************************************************************************/
+  65          // 函数名称：Esp8266_Send_String 
+  66          // 输入参数：str-发送的命令
+  67          // 输出参数：无 
+  68          // 函数功能：向ESP8266模块发送命令
+  69          /******************************************************************************/
+  70          void Esp8266_Send_String(uint8 *str){
+  71   1        Uart_Send_String(str);
+  72   1        Uart_Send_String("\r\n");
+  73   1      }
+  74          
+  75          
+  76          /******************************************************************************/
+  77          // 函数名称：Esp8266_Sta_Mode 
+  78          // 输入参数：无
+  79          // 输出参数：无 
+  80          // 函数功能：ESP8266模块设置为STA模式
+  81          // 注意：忙信号检查
+  82          // 每发送一条命令一定要等待ESP8266完成操作后，再发送下一条命令
+  83          /******************************************************************************/
+  84          void Esp8266_STA_AP_Mode(void){
+  85   1      
+  86   1        /*第一页的显示内容*/
+  87   1        Lcd1602_Show_String(1,1,"WIFI_RST        ");
+  88   1        Lcd1602_Show_String(2,1,"WIFT_MODE=     ");
+  89   1        
+  90   1        /*AT+RST指令的进行*/
+  91   1        ESP8266_Return_Value=0;   //复位返回标志位
+  92   1        while((ESP8266_Return_Value!=0x02)&&(P32==1))
+  93   1        {
+  94   2          //20次复位不成功后结束8266初始化
+  95   2          if(++RESET_COUNTER==20){RESET_COUNTER=0; goto END;}
+  96   2          Esp8266_Send_String("AT+RST");//返回ready
+  97   2          Lcd1602_Show_String(1,1,"WIFI_RST        ");Delay100ms();
+  98   2          Lcd1602_Show_String(1,1,"WIFI_RST>       ");Delay100ms();
+  99   2          Lcd1602_Show_String(1,1,"WIFI_RST->      ");Delay100ms();
+ 100   2          Lcd1602_Show_String(1,1,"WIFI_RST-->     ");Delay100ms();
+ 101   2          Lcd1602_Show_String(1,1,"WIFI_RST--->    ");Delay100ms();
+ 102   2          Lcd1602_Show_String(1,1,"WIFI_RST---->   ");Delay100ms();
+ 103   2          Lcd1602_Show_String(1,1,"WIFI_RST----->  ");Delay100ms();
+ 104   2        }
+ 105   1        if(P32==1){
+ 106   2          RESET_COUNTER=0;
+ 107   2          Lcd1602_Show_String(1,1,"WIFI_RST----->OK");
+ 108   2        }else{
+ 109   2          RESET_COUNTER=0;
+ 110   2          Lcd1602_Show_String(1,1,"WIFI_RST--->FAIL");
+ 111   2          Delay1000ms();
+ 112   2          while(!P32);   //按键未释放则停止在此处
+ 113   2          goto END;
+ 114   2        }
+ 115   1        
+C51 COMPILER V9.60.0.0   ESP8266                                                           08/09/2022 01:28:11 PAGE 3   
+
+ 116   1        
+ 117   1        /*AT+CWMODE_CUR=3指令的执行*/
+ 118   1        ESP8266_Return_Value=0;  //复位返回标志位
+ 119   1        while(ESP8266_Return_Value!=0x01)
+ 120   1        {
+ 121   2          Esp8266_Send_String("AT+CWMODE_CUR=3");//返回OK
+ 122   2          Lcd1602_Show_String(2,1,"WIFT_MODE=     ");Delay50ms();
+ 123   2          Lcd1602_Show_String(2,1,"WIFT_MODE=>    ");Delay50ms();
+ 124   2          Lcd1602_Show_String(2,1,"WIFT_MODE=->   ");Delay50ms();
+ 125   2          Lcd1602_Show_String(2,1,"WIFT_MODE=-->  ");Delay50ms();
+ 126   2          Lcd1602_Show_String(2,1,"WIFT_MODE=---> ");Delay50ms();
+ 127   2          Lcd1602_Show_String(2,1,"WIFT_MODE=---->");Delay50ms();
+ 128   2        }
+ 129   1        Lcd1602_Show_String(2,1,"WIFT_MODE=STA+AP");Delay1000ms();
+ 130   1      
+ 131   1        /*第二页的显示内容*/
+ 132   1        Lcd1602_Show_String(1,1,"STA_MODE        ");
+ 133   1        Lcd1602_Show_String(2,1,"AT+CIPMUX       ");
+ 134   1        
+ 135   1        /*STA模式连接WIFI指令*/
+ 136   1        ESP8266_Return_Value = 0;  //复位返回标志位
+ 137   1        while(ESP8266_Return_Value!=0x01&&P32==1)
+ 138   1        {
+ 139   2          if(++STA_MODE_COUNTER==20){STA_MODE_COUNTER=0; goto STA_MODE_FAIL;}
+ 140   2          Esp8266_Send_String(STA_MODE_Table);//返回OK  
+ 141   2          Lcd1602_Show_String(1,1,"STA_MODE        ");Delay50ms();
+ 142   2          Lcd1602_Show_String(1,1,"STA_MODE>       ");Delay50ms();
+ 143   2          Lcd1602_Show_String(1,1,"STA_MODE->      ");Delay50ms();
+ 144   2          Lcd1602_Show_String(1,1,"STA_MODE-->     ");Delay50ms();
+ 145   2          Lcd1602_Show_String(1,1,"STA_MODE--->    ");Delay50ms();
+ 146   2          Lcd1602_Show_String(1,1,"STA_MODE---->   ");Delay50ms();
+ 147   2          Lcd1602_Show_String(1,1,"STA_MODE----->  ");Delay50ms();
+ 148   2        }
+ 149   1        if(P32==1){
+ 150   2          STA_MODE_COUNTER=0;
+ 151   2          Lcd1602_Show_String(1,1,"STA_MODE----->OK");
+ 152   2        }else{
+ 153   2          STA_MODE_FAIL:
+ 154   2          Lcd1602_Show_String(1,1,"STA_MODE--->FAIL");
+ 155   2        }
+ 156   1        
+ 157   1        
+ 158   1        /*设置单路连接*/
+ 159   1        ESP8266_Return_Value = 0;    //复位返回标志位
+ 160   1        while(ESP8266_Return_Value!=0x01)
+ 161   1        {
+ 162   2          Esp8266_Send_String("AT+CIPMUX=0");
+ 163   2          Lcd1602_Show_String(2,1,"AT+CIPMUX       ");Delay50ms();
+ 164   2          Lcd1602_Show_String(2,1,"AT+CIPMUX>      ");Delay50ms();
+ 165   2          Lcd1602_Show_String(2,1,"AT+CIPMUX->     ");Delay50ms();
+ 166   2          Lcd1602_Show_String(2,1,"AT+CIPMUX-->    ");Delay50ms();
+ 167   2          Lcd1602_Show_String(2,1,"AT+CIPMUX--->   ");Delay50ms();
+ 168   2          Lcd1602_Show_String(2,1,"AT+CIPMUX---->  ");Delay50ms();
+ 169   2          Lcd1602_Show_String(2,1,"AT+CIPMUX-----> ");Delay50ms();
+ 170   2        }
+ 171   1        Lcd1602_Show_String(2,1,"AT+CIPMUX----->0");Delay1000ms();
+ 172   1        
+ 173   1      
+ 174   1        /*第三页的显示内容*/
+ 175   1        GET_TIME:
+ 176   1        if(++GET_TIME_COUNTER==20){GET_TIME_COUNTER=0; goto GET_TIME_FAIL;}
+ 177   1        Lcd1602_Show_String(1,1,"LINK_URL        ");
+C51 COMPILER V9.60.0.0   ESP8266                                                           08/09/2022 01:28:11 PAGE 4   
+
+ 178   1        Lcd1602_Show_String(2,1,"AT+CIPSEND      ");
+ 179   1      
+ 180   1        /*设置TCP连接*/
+ 181   1        ESP8266_Return_Value = 0;
+ 182   1        while((ESP8266_Return_Value!=0x01) && (P32 == 1))
+ 183   1        {
+ 184   2          if(++URL_COUNTER==20){URL_COUNTER=0; goto GET_TIME_FAIL;}
+ 185   2          Esp8266_Send_String("AT+CIPSTART=\"TCP\",\"www.shijian.cc\",80");
+ 186   2          Lcd1602_Show_String(1,1,"LINK_URL        ");Delay50ms();
+ 187   2          Lcd1602_Show_String(1,1,"LINK_URL>       ");Delay50ms();
+ 188   2          Lcd1602_Show_String(1,1,"LINK_URL->      ");Delay50ms();
+ 189   2          Lcd1602_Show_String(1,1,"LINK_URL-->     ");Delay50ms();
+ 190   2          Lcd1602_Show_String(1,1,"LINK_URL--->    ");Delay50ms();
+ 191   2          Lcd1602_Show_String(1,1,"LINK_URL---->   ");Delay50ms();
+ 192   2          Lcd1602_Show_String(1,1,"LINK_URL----->  ");Delay50ms();
+ 193   2        }
+ 194   1        
+ 195   1        if(P32==1){
+ 196   2          Lcd1602_Show_String(1,1,"LINK_URL----->OK");
+ 197   2        }else{
+ 198   2          Lcd1602_Show_String(1,1,"LINK_URL--->FAIL");
+ 199   2        }
+ 200   1        
+ 201   1        while(!P32);   //按键未释放则停止在此处
+ 202   1        
+ 203   1        /*发送数据指令*/
+ 204   1        ESP8266_Return_Value = 0;
+ 205   1        while((ESP8266_Return_Value!=0x01) && (P32 == 1))
+ 206   1        {
+ 207   2          Esp8266_Send_String("AT+CIPSEND=42");
+ 208   2          Lcd1602_Show_String(2,1,"AT+CIPSEND      ");Delay50ms();
+ 209   2          Lcd1602_Show_String(2,1,"AT+CIPSEND>     ");Delay50ms();
+ 210   2          Lcd1602_Show_String(2,1,"AT+CIPSEND->    ");Delay50ms();
+ 211   2          Lcd1602_Show_String(2,1,"AT+CIPSEND-->   ");Delay50ms();
+ 212   2          Lcd1602_Show_String(2,1,"AT+CIPSEND--->  ");Delay50ms();
+ 213   2        }
+ 214   1        if(P32==1){
+ 215   2          Lcd1602_Show_String(2,1,"AT+CIPSEND--->OK");
+ 216   2        }else{
+ 217   2          Lcd1602_Show_String(2,1,"AT+CIPSEND->FAIL");
+ 218   2        }
+ 219   1        Delay1000ms();
+ 220   1        while(!P32);   //按键未释放则停止在此处
+ 221   1        
+ 222   1        
+ 223   1        /*第四页的显示内容*/
+ 224   1        Lcd1602_Show_String(1,1,"SEND_DATA       ");
+ 225   1        Lcd1602_Show_String(2,1,"GET_TIME        ");
+ 226   1        
+ 227   1        /*发送数据内容*/
+ 228   1        ESP8266_Return_Value = 0;
+ 229   1        Esp8266_Send_String("GET http://www.shijian.cc/000/clock.asp\r\n\r\n");
+ 230   1        while((ESP8266_Return_Value!=0x01) && (P32 == 1))   //接收到SEND OK
+ 231   1        {
+ 232   2          if(++GET_TIME_COUNTER==5){GET_TIME_COUNTER=0; goto GET_TIME;}
+ 233   2          Lcd1602_Show_String(1,1,"SEND_DATA       ");Delay50ms();
+ 234   2          Lcd1602_Show_String(1,1,"SEND_DATA>      ");Delay50ms();
+ 235   2          Lcd1602_Show_String(1,1,"SEND_DATA->     ");Delay50ms();
+ 236   2          Lcd1602_Show_String(1,1,"SEND_DATA-->    ");Delay50ms();
+ 237   2          Lcd1602_Show_String(1,1,"SEND_DATA--->   ");Delay50ms();
+ 238   2          Lcd1602_Show_String(1,1,"SEND_DATA---->  ");Delay50ms();
+ 239   2        }
+C51 COMPILER V9.60.0.0   ESP8266                                                           08/09/2022 01:28:11 PAGE 5   
+
+ 240   1        if(P32==1){
+ 241   2          Lcd1602_Show_String(1,1,"SEND_DATA---->OK");
+ 242   2        }else{
+ 243   2          Lcd1602_Show_String(1,1,"SEND_DATA-->FAIL");
+ 244   2        }
+ 245   1        
+ 246   1        while(!P32);   //按键未释放则停止在此处
+ 247   1        
+ 248   1        
+ 249   1        
+ 250   1        while((ESP8266_Return_Value!=0x01) && (P32 == 1))
+ 251   1        {
+ 252   2          if(++GET_TIME_COUNTER==5){GET_TIME_COUNTER=0; goto GET_TIME;}
+ 253   2          Lcd1602_Show_String(2,1,"GET_TIME        ");Delay50ms();
+ 254   2          Lcd1602_Show_String(2,1,"GET_TIME>       ");Delay50ms();
+ 255   2          Lcd1602_Show_String(2,1,"GET_TIME->      ");Delay50ms();
+ 256   2          Lcd1602_Show_String(2,1,"GET_TIME-->     ");Delay50ms();
+ 257   2          Lcd1602_Show_String(2,1,"GET_TIME--->    ");Delay50ms();
+ 258   2          Lcd1602_Show_String(2,1,"GET_TIME---->   ");Delay50ms();
+ 259   2          Lcd1602_Show_String(2,1,"GET_TIME----->  ");Delay50ms();
+ 260   2        }
+ 261   1        if(P32==1){
+ 262   2          GET_TIME_COUNTER=0;
+ 263   2          Lcd1602_Show_String(2,1,"GET_TIME----->OK");
+ 264   2        }else{
+ 265   2          GET_TIME_FAIL:
+ 266   2          Lcd1602_Show_String(2,1,"GET_TIME--->FAIL");
+ 267   2        }
+ 268   1        while(!P32);   //按键未释放则停止在此处
+ 269   1        Delay1000ms();
+ 270   1        
+ 271   1        
+ 272   1        /*第五页的显示内容*/
+ 273   1        Lcd1602_Write_Cmd(0x01);//显示清屏  
+ 274   1        Lcd1602_Show_String(1,4,DateTable);
+ 275   1        Lcd1602_Show_String(2,5,TimeTable);
+ 276   1        Delay1000ms();
+ 277   1        
+ 278   1        /*第六页的显示内容*/
+ 279   1        Lcd1602_Show_String(1,1,"AT+CIPMUX       ");
+ 280   1        Lcd1602_Show_String(2,1,"SET_PORT        ");
+ 281   1        
+ 282   1        /*设置多路连接*/
+ 283   1        ESP8266_Return_Value = 0;    //复位返回标志位
+ 284   1        while(ESP8266_Return_Value!=0x01)
+ 285   1        {
+ 286   2          Esp8266_Send_String("AT+CIPMUX=1");
+ 287   2          Lcd1602_Show_String(1,1,"AT+CIPMUX       ");Delay50ms();
+ 288   2          Lcd1602_Show_String(1,1,"AT+CIPMUX>      ");Delay50ms();
+ 289   2          Lcd1602_Show_String(1,1,"AT+CIPMUX->     ");Delay50ms();
+ 290   2          Lcd1602_Show_String(1,1,"AT+CIPMUX-->    ");Delay50ms();
+ 291   2          Lcd1602_Show_String(1,1,"AT+CIPMUX--->   ");Delay50ms();
+ 292   2          Lcd1602_Show_String(1,1,"AT+CIPMUX---->  ");Delay50ms();
+ 293   2          Lcd1602_Show_String(1,1,"AT+CIPMUX-----> ");Delay50ms();
+ 294   2        }
+ 295   1        Lcd1602_Show_String(1,1,"AT+CIPMUX----->1");
+ 296   1        
+ 297   1        /*设置多路连接端口*/
+ 298   1        ESP8266_Return_Value = 0;
+ 299   1        while((ESP8266_Return_Value!=0x01)&& (P32 == 1))
+ 300   1        {
+ 301   2          Esp8266_Send_String(ATCIPSERVER);//返回OK
+C51 COMPILER V9.60.0.0   ESP8266                                                           08/09/2022 01:28:11 PAGE 6   
+
+ 302   2          Lcd1602_Show_String(2,1,"SET_PORT        ");Delay50ms();
+ 303   2          Lcd1602_Show_String(2,1,"SET_PORT>       ");Delay50ms();
+ 304   2          Lcd1602_Show_String(2,1,"SET_PORT->      ");Delay50ms();
+ 305   2          Lcd1602_Show_String(2,1,"SET_PORT-->     ");Delay50ms();
+ 306   2          Lcd1602_Show_String(2,1,"SET_PORT--->    ");Delay50ms();
+ 307   2          Lcd1602_Show_String(2,1,"SET_PORT---->   ");Delay50ms();
+ 308   2          Lcd1602_Show_String(2,1,"SET_PORT----->  ");Delay50ms();
+ 309   2        }
+ 310   1        if(P32==1){
+ 311   2          Lcd1602_Show_String(2,1,"SET_PORT----->OK");
+ 312   2        }else{
+ 313   2          Lcd1602_Show_String(2,1,"SET_PORT--->FAIL");
+ 314   2        }
+ 315   1        while(!P32);Delay1000ms();
+ 316   1        
+ 317   1        /*第七页显示内容*/
+ 318   1        Lcd1602_Show_String(1,1,"AT_MODE         ");
+ 319   1        Lcd1602_Show_String(2,1,"GET_IP          ");
+ 320   1      
+ 321   1        /*AP模式设置指令*/
+ 322   1        ESP8266_Return_Value = 0;  //复位返回标志位
+ 323   1        while(ESP8266_Return_Value!=0x01&& (P32 == 1))
+ 324   1        {
+ 325   2          Esp8266_Send_String(AP_MODE_Table);//返回OK 
+ 326   2          Lcd1602_Show_String(1,1,"AT_MODE         ");Delay50ms();
+ 327   2          Lcd1602_Show_String(1,1,"AT_MODE>        ");Delay50ms();
+ 328   2          Lcd1602_Show_String(1,1,"AT_MODE->       ");Delay50ms();
+ 329   2          Lcd1602_Show_String(1,1,"AT_MODE-->      ");Delay50ms();
+ 330   2          Lcd1602_Show_String(1,1,"AT_MODE--->     ");Delay50ms();
+ 331   2          Lcd1602_Show_String(1,1,"AT_MODE---->    ");Delay50ms();
+ 332   2          Lcd1602_Show_String(1,1,"AT_MODE----->   ");Delay50ms();
+ 333   2          Lcd1602_Show_String(1,1,"AT_MODE------>  ");Delay50ms();
+ 334   2        }
+ 335   1        if(P32==1){
+ 336   2          Lcd1602_Show_String(1,1,"AT_MODE------>OK");
+ 337   2        }else{
+ 338   2          Lcd1602_Show_String(1,1,"AT_MODE---->FAIL");
+ 339   2        }
+ 340   1        while(!P32);
+ 341   1        
+ 342   1        /*查询IP地址*/
+ 343   1        ESP8266_Return_Value = 0; 
+ 344   1        Esp8266_Send_String("AT+CIFSR");//查询路由器分配的IP地址.返回OK
+ 345   1        while(ESP8266_Return_Value!=0x01)
+ 346   1        {
+ 347   2          Lcd1602_Show_String(2,1,"GET_IP          ");Delay50ms();
+ 348   2          Lcd1602_Show_String(2,1,"GET_IP>         ");Delay50ms();
+ 349   2          Lcd1602_Show_String(2,1,"GET_IP->        ");Delay50ms();
+ 350   2          Lcd1602_Show_String(2,1,"GET_IP-->       ");Delay50ms();
+ 351   2          Lcd1602_Show_String(2,1,"GET_IP--->      ");Delay50ms();
+ 352   2          Lcd1602_Show_String(2,1,"GET_IP---->     ");Delay50ms();
+ 353   2          Lcd1602_Show_String(2,1,"GET_IP----->    ");Delay50ms();
+ 354   2          Lcd1602_Show_String(2,1,"GET_IP------>   ");Delay50ms();
+ 355   2          Lcd1602_Show_String(2,1,"GET_IP------->  ");Delay50ms();
+ 356   2        }
+ 357   1        Lcd1602_Show_String(2,1,"GET_IP------->OK");Delay1000ms();
+ 358   1        
+ 359   1        /*第八页显示内容*/
+ 360   1        ESP8266_Return_Value = 0;
+ 361   1        Lcd1602_Write_Cmd(0x01);//显示清屏
+ 362   1        Lcd1602_Show_String(1,1,AP_IP_ADDRESS);
+ 363   1        Lcd1602_Show_String(2,1,APIPTable);
+C51 COMPILER V9.60.0.0   ESP8266                                                           08/09/2022 01:28:11 PAGE 7   
+
+ 364   1        Delay1000ms();Delay1000ms();Delay1000ms();
+ 365   1        
+ 366   1        /*第九页显示内容*/
+ 367   1        ESP8266_Return_Value = 0;
+ 368   1        Lcd1602_Write_Cmd(0x01);//显示清屏
+ 369   1        Lcd1602_Show_String(1,1,STA_IP_ADDRESS);
+ 370   1        Lcd1602_Show_String(2,1,STAIPTable);
+ 371   1        Delay1000ms();Delay1000ms();Delay1000ms();
+ 372   1        
+ 373   1        END:;
+ 374   1        
+ 375   1      }
+ 376          
+ 377          
+ 378          /******************************************************************************/
+ 379          // 函数名称：arryClear 
+ 380          // 输入参数：dataArry
+ 381          // 输出参数：无 
+ 382          // 函数功能：数组元素清零
+ 383          /******************************************************************************/
+ 384          void arryClear(uint8 *dataArry){
+ 385   1        uint8 i;
+ 386   1        for(i=0;i<200;i++){
+ 387   2          *(dataArry+i)=' ';
+ 388   2        }
+ 389   1      }
+ 390          
+ 391          
+ 392          /******************************************************************************/
+ 393          // 函数名称：Uart_Int 
+ 394          // 输入参数：无
+ 395          // 输出参数：无 
+ 396          // 函数功能：串口中断服务程序
+ 397          // 主要两个功能：
+ 398          // 1. 忙信号判断 - 单片机发送指令后，根据ESP8266反馈的信息判断指令是否完成
+ 399          // 2. 任务判断   - 单片机根据从ESP8266模块收到的信息，执行相应的动作
+ 400          /******************************************************************************/
+ 401          void Uart_Interrupt(void) interrupt INTERRUPT_UART_Rx_Tx {
+ 402   1        
+ 403   1        static u8 ip = 0;   //ip地址数组元素标号
+ 404   1        static uint8 i = 0;   //接收数组元素标号
+ 405   1        static u8 t = 0;    //TimeTable数组元素标号
+ 406   1        static u8 sta = 0;  //sta数组元素标号
+ 407   1        static u8 ap = 0;   //ap数组元素标号
+ 408   1        
+ 409   1        if(TI){   //如果发送中断引起
+ 410   2          
+ 411   2          TI = 0;  //发送中断请求标志位置0
+ 412   2        }
+ 413   1        
+ 414   1        else{    //否则接收中断引起
+ 415   2          
+ 416   2          RI = 0;  //接收中断请求标志位置0
+ 417   2          
+ 418   2          /*单片机软件自动下载*/
+ 419   2          if(SBUF==0x7f){   //STC下载指令0X7F 
+ 420   3            
+ 421   3            UART_0x7F_Count++;   //串口0x7F计数变量+1
+ 422   3            
+ 423   3            if(UART_0x7F_Count==10) //如果收到10次0X7F
+ 424   3            {
+ 425   4                UART_0x7F_Count=0;   //串口0x7F计数变量置0
+C51 COMPILER V9.60.0.0   ESP8266                                                           08/09/2022 01:28:11 PAGE 8   
+
+ 426   4                IAP_CONTR=0x60;//复位命令  
+ 427   4            }
+ 428   3          }else{
+ 429   3            UART_0x7F_Count=0;  //串口0x7F计数变量置0
+ 430   3          }
+ 431   2          
+ 432   2          rcvTable[i]=SBUF;  //每次接受中断都放入接受数组一字节数据
+ 433   2          if(i==200){i=0;}  //如果接受数组已满，则从头放起
+ 434   2          i++;  //数组元素号+1
+ 435   2      
+ 436   2          //接收到换行符意味着指令已经接收完整
+ 437   2          /*对忙信号的判断，判断模块的返回内容修改标志位*/
+ 438   2          if(rcvTable[i-1]=='\n'){  //如果在本次接收之前是一个换行符
+ 439   3                                    //接收到换行符意味着接收数组已经接收到当前行的末尾
+ 440   3                                    //如果判断的任务控制达到了末尾
+ 441   3            
+ 442   3            i = 0;  //接收数组指向了第0个元素,判断当前指令到达了结尾
+ 443   3            
+ 444   3            //如果接收到ok,返回OK标志位
+ 445   3            if((rcvTable[0]=='O')&&(rcvTable[1]=='K')){  
+ 446   4              ESP8266_Return_Value = 0x01;
+ 447   4            }
+ 448   3            
+ 449   3            //如果接收到SEND OK，返回SEND OK标志位
+ 450   3            else if((rcvTable[0]=='S')&&(rcvTable[1]=='E')&&(rcvTable[2]=='N')
+ 451   3              &&(rcvTable[3]=='D')&&(rcvTable[5]=='O')&&(rcvTable[6]=='K')){
+ 452   4                ESP8266_Return_Value = 0x03;
+ 453   4              }
+ 454   3            
+ 455   3            //否则如果接收到ready,返回ready标志位
+ 456   3            else if((rcvTable[0]=='r')&&(rcvTable[1]=='e')&&(rcvTable[4]=='y')){
+ 457   4              ESP8266_Return_Value = 0x02;      
+ 458   4            }
+ 459   3            
+ 460   3          //  AT+CIFSR      //8266模块接收到当前指令之后接收到换行符
+ 461   3          //  +CIFSR:APIP,"192.168.4.1"
+ 462   3          //  +CIFSR:APMAC,"36:94:54:64:c3:b7"
+ 463   3          //  +CIFSR:STAIP,"192.168.0.103"
+ 464   3          //  +CIFSR:STAMAC,"34:94:54:64:c3:b7"
+ 465   3            
+ 466   3            //否则如果接收到 +CIFSR:APIP,"192.168.4.1"
+ 467   3            else if((rcvTable[0]=='+')&&(rcvTable[9]=='I')&&(rcvTable[10]=='P')){
+ 468   4              
+ 469   4              /*获取IP地址写入到IP数组中,判断到 " 则退出不写入*/
+ 470   4              for(ip=0;ip<16;ip++){
+ 471   5                if(rcvTable[ip+13]=='"'){break;}
+ 472   5                APIPTable[ip]=rcvTable[ip+13];
+ 473   5              }
+ 474   4              
+ 475   4              ESP8266_Return_Value = 0x01;    
+ 476   4            }
+ 477   3            
+ 478   3            
+ 479   3            //否则如果接收到 +CIFSR:STAIP,"192.168.0.103"
+ 480   3            else if((rcvTable[0]=='+')&&(rcvTable[10]=='I')&&(rcvTable[11]=='P')){
+ 481   4              
+ 482   4              /*获取IP地址写入到IP数组中,判断到 " 则退出不写入*/
+ 483   4              for(ip=0;ip<16;ip++){
+ 484   5                if(rcvTable[ip+14]=='"'){break;}
+ 485   5                STAIPTable[ip]=rcvTable[ip+14];
+ 486   5              }
+ 487   4              
+C51 COMPILER V9.60.0.0   ESP8266                                                           08/09/2022 01:28:11 PAGE 9   
+
+ 488   4              ESP8266_Return_Value = 0x01;    
+ 489   4            }
+ 490   3            
+ 491   3            // +IPD,0,33:STA=AT+CWJAP_CUR="TP-LINK_847A","asdfghjkl"
+ 492   3            //STA_MODE_Table[150]={"AT+CWJAP_CUR=\"TP-LINK_888F\",\"asdfghjkl\""};
+ 493   3            //AP_MODE_Table[150]={"AT+CWSAP_CUR=\"Wireless_Controller_Test\",\"asdfghjkl\",3,4"};
+ 494   3            else if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 495   3                  &&(rcvTable[3]=='D')&&(rcvTable[10]=='S')&&(rcvTable[11]=='T')
+ 496   3                  &&(rcvTable[12]=='A')&&(rcvTable[13]=='=')){
+ 497   4                    
+ 498   4                    //清空STA信息
+ 499   4                    for(sta=0;sta<150;sta++){
+ 500   5                      STA_MODE_Table[sta] = ' ';
+ 501   5                    } 
+ 502   4                  
+ 503   4                    //将获取到的STA数据写入STA数组
+ 504   4                    for(sta=0;sta<150;sta++){
+ 505   5                      if(rcvTable[sta-1]=='\n'){
+ 506   6                        break;
+ 507   6                      }
+ 508   5                      STA_MODE_Table[sta] = rcvTable[sta+14];
+ 509   5                    }
+ 510   4                    
+ 511   4                    EA = 0;
+ 512   4                    EEPROM_Program_Sector_1();
+ 513   4                    EA = 1;
+ 514   4                          
+ 515   4                    arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 516   4                    i = 0;   //接收数组指向了第0个元素
+ 517   4              }
+ 518   3              
+ 519   3            // +IPD,0,103:STA=AT+CWJAP_CUR="TP-LINK_847A","asdfghjkl"
+ 520   3            //STA_MODE_Table[150]={"AT+CWJAP_CUR=\"TP-LINK_888F\",\"asdfghjkl\""};
+ 521   3            //AP_MODE_Table[150]={"AT+CWSAP_CUR=\"Wireless_Controller_Test\",\"asdfghjkl\",3,4"};
+ 522   3            else if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 523   3                  &&(rcvTable[3]=='D')&&(rcvTable[11]=='S')&&(rcvTable[12]=='T')
+ 524   3                  &&(rcvTable[13]=='A')&&(rcvTable[14]=='=')){
+ 525   4                    
+ 526   4                    //清空STA信息
+ 527   4                    for(sta=0;sta<150;sta++){
+ 528   5                      STA_MODE_Table[sta] = ' ';
+ 529   5                    } 
+ 530   4                  
+ 531   4                    //将获取到的STA数据写入STA数组
+ 532   4                    for(sta=0;sta<150;sta++){
+ 533   5                      if(rcvTable[sta-1]=='\n'){
+ 534   6                        break;
+ 535   6                      }
+ 536   5                      STA_MODE_Table[sta] = rcvTable[sta+14];
+ 537   5                    }
+ 538   4                    
+ 539   4                    EA = 0;
+ 540   4                    EEPROM_Program_Sector_1();
+ 541   4                    EA = 1;
+ 542   4                          
+ 543   4                    arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 544   4                    i = 0;   //接收数组指向了第0个元素
+ 545   4              }
+ 546   3      
+ 547   3      
+ 548   3            // +IPD,0,61:AP=AT+CWSAP_CUR="Wireless_Controller_Test","asdfghjkl",3,4
+ 549   3            //STA_MODE_Table[150]={"AT+CWJAP_CUR=\"TP-LINK_888F\",\"asdfghjkl\""};
+C51 COMPILER V9.60.0.0   ESP8266                                                           08/09/2022 01:28:11 PAGE 10  
+
+ 550   3            //AP_MODE_Table[150]={"AT+CWSAP_CUR=\"Wireless_Controller_Test\",\"asdfghjkl\",3,4"};
+ 551   3             else if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 552   3                  &&(rcvTable[3]=='D')&&(rcvTable[10]=='A')&&(rcvTable[11]=='P')
+ 553   3                  &&(rcvTable[12]=='=')){
+ 554   4                    
+ 555   4                    //清空AP信息
+ 556   4                    for(ap=0;ap<150;ap++){
+ 557   5                      AP_MODE_Table[ap] = ' ';
+ 558   5                    } 
+ 559   4                    
+ 560   4                    //将获取到的AP数据写入AP数组
+ 561   4                    for(ap=0;ap<150;ap++){
+ 562   5                      if(rcvTable[ap-1]=='\n'){
+ 563   6                        break;
+ 564   6                      }
+ 565   5                      AP_MODE_Table[ap] = rcvTable[ap+13];
+ 566   5                    }
+ 567   4                    
+ 568   4                    EA = 0;
+ 569   4                    EEPROM_Program_Sector_1();
+ 570   4                    EA = 1;
+ 571   4                          
+ 572   4                    arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 573   4                    i = 0;   //接收数组指向了第0个元素
+ 574   4              }
+ 575   3      
+ 576   3            // +IPD,0,101:AP=AT+CWSAP_CUR="Wireless_Controller_Test","asdfghjkl",3,4
+ 577   3            //STA_MODE_Table[150]={"AT+CWJAP_CUR=\"TP-LINK_888F\",\"asdfghjkl\""};
+ 578   3            //AP_MODE_Table[150]={"AT+CWSAP_CUR=\"Wireless_Controller_Test\",\"asdfghjkl\",3,4"};
+ 579   3             else if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 580   3                  &&(rcvTable[3]=='D')&&(rcvTable[11]=='A')&&(rcvTable[12]=='P')
+ 581   3                  &&(rcvTable[13]=='=')){
+ 582   4                    
+ 583   4                    //清空AP信息
+ 584   4                    for(ap=0;ap<150;ap++){
+ 585   5                      AP_MODE_Table[ap] = ' ';
+ 586   5                    } 
+ 587   4                    
+ 588   4                    //将获取到的AP数据写入AP数组
+ 589   4                    for(ap=0;ap<150;ap++){
+ 590   5                      if(rcvTable[ap-1]=='\n'){
+ 591   6                        break;
+ 592   6                      }
+ 593   5                      AP_MODE_Table[ap] = rcvTable[ap+14];
+ 594   5                    }
+ 595   4                    
+ 596   4                    EA = 0;
+ 597   4                    EEPROM_Program_Sector_1();
+ 598   4                    EA = 1;
+ 599   4                          
+ 600   4                    arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 601   4                    i = 0;   //接收数组指向了第0个元素
+ 602   4              } 
+ 603   3      
+ 604   3          }else{  //否则没有接收到末尾的换行符，则判断任务控制
+ 605   3            
+ 606   3            //接收到OK
+ 607   3            //返回OK返回值
+ 608   3            if((rcvTable[0]=='O')&&(rcvTable[1]=='K')){
+ 609   4              ESP8266_Return_Value = 0x01;    
+ 610   4              
+ 611   4              arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+C51 COMPILER V9.60.0.0   ESP8266                                                           08/09/2022 01:28:11 PAGE 11  
+
+ 612   4              i = 0;   //接收数组指向了第0个元素
+ 613   4             }
+ 614   3            
+ 615   3            
+ 616   3            //接收到时间数据
+ 617   3            //+IPD,19:2022/06/14 19:03:24CLOSED
+ 618   3            if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 619   3             &&(rcvTable[3]=='D')&&(rcvTable[4]==',')&&(rcvTable[5]=='1')
+ 620   3            &&(rcvTable[6]=='9')&&(rcvTable[7]==':')&&(rcvTable[27]=='C')
+ 621   3             &&(rcvTable[29]=='O')&&(rcvTable[32]=='D')){
+ 622   4               
+ 623   4               /*有用时间数据一共19位为：2022/06/14 19:03:24*/
+ 624   4               //首先遍历接收数组，将时间数据取出
+ 625   4               //同时将时间字符串转换成数字并存入变量
+ 626   4              
+ 627   4               //接受日期时间数据之前复位日期时间
+ 628   4              Year=0;Month=0;Day=0;
+ 629   4              hour=0;minute=0;second=0;
+ 630   4            
+ 631   4              for(t=0;t<19;t++){
+ 632   5                
+ 633   5                if((t>=0)&&(t<=3)){
+ 634   6                  Year=Year*10+(rcvTable[t+8]-'0');
+ 635   6                  
+ 636   6                }else if((t>=5)&&(t<=6)){
+ 637   6                  Month=Month*10+(rcvTable[t+8]-'0');
+ 638   6                  
+ 639   6                }else if((t>=8)&&(t<=9)){
+ 640   6                  Day=Day*10+(rcvTable[t+8]-'0');
+ 641   6                  
+ 642   6                }else if((t>=11)&&(t<=12)){
+ 643   6                  hour=hour*10+(rcvTable[t+8]-'0');
+ 644   6                  
+ 645   6                }else if((t>=14)&&(t<=15)){
+ 646   6                  minute=minute*10+(rcvTable[t+8]-'0');
+ 647   6                  
+ 648   6                }else if((t>=17)&&(t<=18)){
+ 649   6                  second=second*10+(rcvTable[t+8]-'0');
+ 650   6                }
+ 651   5                
+ 652   5                if((t>=0)&&(t<=9)){
+ 653   6                  DateTable[t]=rcvTable[t+8];
+ 654   6                }else if((t>=11)&&(t<=18)){
+ 655   6                  TimeTable[t-11]=rcvTable[t+8];
+ 656   6                }
+ 657   5                
+ 658   5              }
+ 659   4              ESP8266_Return_Value = 0x01;    
+ 660   4              
+ 661   4              arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 662   4              i = 0;   //接收数组指向了第0个元素
+ 663   4      
+ 664   4             }
+ 665   3             
+ 666   3          
+ 667   3            //+IPD,0,11,StartTask>1
+ 668   3            if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 669   3             &&(rcvTable[3]=='D')&&(rcvTable[4]==',')&&(rcvTable[10]=='S')
+ 670   3             &&(rcvTable[12]=='a')&&(rcvTable[15]=='T')&&(rcvTable[18]=='k')
+ 671   3             &&(rcvTable[19]=='>')&&(rcvTable[20]=='1')){
+ 672   4               
+ 673   4               Task1 = 1;
+C51 COMPILER V9.60.0.0   ESP8266                                                           08/09/2022 01:28:11 PAGE 12  
+
+ 674   4               arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 675   4               i = 0;   //接收数组指向了第0个元素
+ 676   4                  
+ 677   4               //+IPD,0,11,StartTask>2
+ 678   4             }else if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 679   3             &&(rcvTable[3]=='D')&&(rcvTable[4]==',')&&(rcvTable[10]=='S')
+ 680   3             &&(rcvTable[12]=='a')&&(rcvTable[15]=='T')&&(rcvTable[18]=='k')
+ 681   3             &&(rcvTable[19]=='>')&&(rcvTable[20]=='2')){
+ 682   4               
+ 683   4               Task2 = 1;
+ 684   4               arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 685   4               i = 0;   //接收数组指向了第0个元素
+ 686   4               
+ 687   4               //+IPD,0,11,StartTask>3
+ 688   4             }else if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 689   3             &&(rcvTable[3]=='D')&&(rcvTable[4]==',')&&(rcvTable[10]=='S')
+ 690   3             &&(rcvTable[12]=='a')&&(rcvTable[15]=='T')&&(rcvTable[18]=='k')
+ 691   3             &&(rcvTable[19]=='>')&&(rcvTable[20]=='3')){
+ 692   4               
+ 693   4               Task3 = 1;
+ 694   4               arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 695   4               i = 0;   //接收数组指向了第0个元素
+ 696   4               
+ 697   4               //+IPD,0,11,StartTask>4
+ 698   4             }else if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 699   3             &&(rcvTable[3]=='D')&&(rcvTable[4]==',')&&(rcvTable[10]=='S')
+ 700   3             &&(rcvTable[12]=='a')&&(rcvTable[15]=='T')&&(rcvTable[18]=='k')
+ 701   3             &&(rcvTable[19]=='>')&&(rcvTable[20]=='4')){
+ 702   4               
+ 703   4               Task4 = 1;
+ 704   4               arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 705   4               i = 0;   //接收数组指向了第0个元素
+ 706   4               
+ 707   4               //+IPD,0,11,StartTask>5
+ 708   4             }else if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 709   3             &&(rcvTable[3]=='D')&&(rcvTable[4]==',')&&(rcvTable[10]=='S')
+ 710   3             &&(rcvTable[12]=='a')&&(rcvTable[15]=='T')&&(rcvTable[18]=='k')
+ 711   3             &&(rcvTable[19]=='>')&&(rcvTable[20]=='5')){
+ 712   4               
+ 713   4               Task5 = 1;
+ 714   4               arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 715   4               i = 0;   //接收数组指向了第0个元素
+ 716   4               
+ 717   4               //+IPD,0,11,StartTask>6
+ 718   4             }else if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 719   3             &&(rcvTable[3]=='D')&&(rcvTable[4]==',')&&(rcvTable[10]=='S')
+ 720   3             &&(rcvTable[12]=='a')&&(rcvTable[15]=='T')&&(rcvTable[18]=='k')
+ 721   3             &&(rcvTable[19]=='>')&&(rcvTable[20]=='6')){
+ 722   4               
+ 723   4               Task6 = 1;
+ 724   4               arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 725   4               i = 0;   //接收数组指向了第0个元素
+ 726   4            
+ 727   4               //+IPD,0,10,StopTask>1
+ 728   4             }else if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 729   3             &&(rcvTable[3]=='D')&&(rcvTable[4]==',')&&(rcvTable[10]=='S')
+ 730   3             &&(rcvTable[13]=='p')&&(rcvTable[14]=='T')&&(rcvTable[17]=='k')
+ 731   3             &&(rcvTable[18]=='>')&&(rcvTable[19]=='1')){
+ 732   4               
+ 733   4               Task1 = 0;
+ 734   4               arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 735   4               i = 0;     //接收数组指向了第0个元素
+C51 COMPILER V9.60.0.0   ESP8266                                                           08/09/2022 01:28:11 PAGE 13  
+
+ 736   4      
+ 737   4               //+IPD,0,10,StopTask>2
+ 738   4             }else if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 739   3             &&(rcvTable[3]=='D')&&(rcvTable[4]==',')&&(rcvTable[10]=='S')
+ 740   3             &&(rcvTable[13]=='p')&&(rcvTable[14]=='T')&&(rcvTable[17]=='k')
+ 741   3             &&(rcvTable[18]=='>')&&(rcvTable[19]=='2')){
+ 742   4               
+ 743   4               Task2 = 0;
+ 744   4               arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 745   4               i = 0;     //接收数组指向了第0个元素     
+ 746   4      
+ 747   4               //+IPD,0,10,StopTask>3
+ 748   4             }else if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 749   3             &&(rcvTable[3]=='D')&&(rcvTable[4]==',')&&(rcvTable[10]=='S')
+ 750   3             &&(rcvTable[13]=='p')&&(rcvTable[14]=='T')&&(rcvTable[17]=='k')
+ 751   3             &&(rcvTable[18]=='>')&&(rcvTable[19]=='3')){
+ 752   4               
+ 753   4               Task3 = 0;
+ 754   4               arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 755   4               i = 0;     //接收数组指向了第0个元素     
+ 756   4               
+ 757   4               //+IPD,0,10,StopTask>4
+ 758   4             }else if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 759   3             &&(rcvTable[3]=='D')&&(rcvTable[4]==',')&&(rcvTable[10]=='S')
+ 760   3             &&(rcvTable[13]=='p')&&(rcvTable[14]=='T')&&(rcvTable[17]=='k')
+ 761   3             &&(rcvTable[18]=='>')&&(rcvTable[19]=='4')){
+ 762   4               
+ 763   4               Task4 = 0;
+ 764   4               arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 765   4               i = 0;     //接收数组指向了第0个元素     
+ 766   4               
+ 767   4               //+IPD,0,10,StopTask>5
+ 768   4             }else if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 769   3             &&(rcvTable[3]=='D')&&(rcvTable[4]==',')&&(rcvTable[10]=='S')
+ 770   3             &&(rcvTable[13]=='p')&&(rcvTable[14]=='T')&&(rcvTable[17]=='k')
+ 771   3             &&(rcvTable[18]=='>')&&(rcvTable[19]=='5')){
+ 772   4               
+ 773   4               Task5 = 0;
+ 774   4               arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 775   4               i = 0;     //接收数组指向了第0个元素     
+ 776   4               
+ 777   4               //+IPD,0,10,StopTask>6
+ 778   4             }else if((rcvTable[0]=='+')&&(rcvTable[1]=='I')&&(rcvTable[2]=='P')
+ 779   3             &&(rcvTable[3]=='D')&&(rcvTable[4]==',')&&(rcvTable[10]=='S')
+ 780   3             &&(rcvTable[13]=='p')&&(rcvTable[14]=='T')&&(rcvTable[17]=='k')
+ 781   3             &&(rcvTable[18]=='>')&&(rcvTable[19]=='6')){
+ 782   4               
+ 783   4               Task6 = 0;
+ 784   4               arryClear(rcvTable);  //清除接收数组中全部内容，全部置0
+ 785   4               i = 0;     //接收数组指向了第0个元素     
+ 786   4             }
+ 787   3             
+ 788   3             
+ 789   3          }   
+ 790   2          
+ 791   2          }
+ 792   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   4305    ----
+   CONSTANT SIZE    =   1781    ----
+C51 COMPILER V9.60.0.0   ESP8266                                                           08/09/2022 01:28:11 PAGE 14  
+
+   XDATA SIZE       =    584    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      9       3
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,16 @@
+Removed Pin From Net: NetName=NetD1_1 Pin=JK1-1
+Removed Pin From Net: NetName=+5 Pin=JK1-2
+Removed Pin From Net: NetName=NetD1_1 Pin=LED1-2
+Removed Pin From Net: NetName=+5 Pin=R1-2
+Added Pin To Net: NetName=+5 Pin=JK1-1
+Added Pin To Net: NetName=NetD1_1 Pin=JK1-2
+Added Pin To Net: NetName=+5 Pin=LED1-1
+Added Pin To Net: NetName=NetD1_1 Pin=R1-2
+Change Net Color : Old Net Color=RGB(158, 161, 117) New Net Color=Default
+Change Net Color : Old Net Color=RGB(158, 161, 117) New Net Color=Default
+Change Net Color : Old Net Color=RGB(158, 161, 117) New Net Color=Default
+Change Net Color : Old Net Color=RGB(158, 161, 117) New Net Color=Default
+Added Pin To Net: NetName=NetLED1_2 Pin=LED1-2
+Added Pin To Net: NetName=NetLED1_2 Pin=R1-1
+Added Net: Name=NetLED1_2
+Change Class Name : Old Net Name=¹¤¿Ø°å_V1.1 New Net Name=Wireless_Controller_V1.1

@@ -1,0 +1,21 @@
+Added Component: Designator=JP7(HDR2.54-M-LI-16P)
+Add component (AddParameter): Name = "BOM名称"; Value = "16P接插件"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "下单链接"; Value = "https://item.taobao.com/item.htm?ft=t&id=613637044352"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "淘宝ID"; Value = "小糖豆的小窝窝"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=GND Pin=JP7-1
+Added Pin To Net: NetName=+5 Pin=JP7-2
+Added Pin To Net: NetName=NetJP7_3 Pin=JP7-3
+Added Pin To Net: NetName=NetJP7_4 Pin=JP7-4
+Added Pin To Net: NetName=NetJP7_5 Pin=JP7-5
+Added Pin To Net: NetName=NetJP7_6 Pin=JP7-6
+Added Pin To Net: NetName=NetJP7_7 Pin=JP7-7
+Added Pin To Net: NetName=NetJP7_8 Pin=JP7-8
+Added Pin To Net: NetName=NetJP7_9 Pin=JP7-9
+Added Pin To Net: NetName=NetJP7_10 Pin=JP7-10
+Added Pin To Net: NetName=NetJP7_11 Pin=JP7-11
+Added Pin To Net: NetName=NetJP7_12 Pin=JP7-12
+Added Pin To Net: NetName=NetJP7_13 Pin=JP7-13
+Added Pin To Net: NetName=NetJP7_14 Pin=JP7-14
+Added Pin To Net: NetName=NetJP7_15 Pin=JP7-15
+Added Pin To Net: NetName=GND Pin=JP7-16
+Added Member To Class: ClassName=工控板_V1.1 Member=Component JP7 HDR-1X16

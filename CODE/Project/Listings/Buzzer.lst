@@ -1,0 +1,59 @@
+C51 COMPILER V9.60.0.0   BUZZER                                                            08/04/2022 10:45:46 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE BUZZER
+OBJECT MODULE PLACED IN ..\Output\Buzzer.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE ..\Source\Device_Driver\Buzzer.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\Source\
+                    -Application;..\Source\Device_Driver;..\Source\System;D:\Keil\C51\INC\STC) DEBUG OBJECTEXTEND PRINT(.\Listings\Buzzer.lst
+                    -) TABS(2) OBJECT(..\Output\Buzzer.obj)
+
+line level    source
+
+   1          #include "Config.h"
+   2          #include "Buzzer.h"
+   3          #include "Timer.h"
+   4          
+   5          u8 Number;
+   6          
+   7          void Buzzer_Init()
+   8          {
+   9   1        Number = 70;
+  10   1        Buzzer = 1;
+  11   1        ET1 = 0;    //关闭定时器1中断
+  12   1      }
+  13          
+  14          void Buzzer_Open()
+  15          {
+  16   1        ET1 = 1;    //开启定时器1中断
+  17   1      }
+  18          
+  19          /*
+  20          void Buzzer_Close()
+  21          {
+  22            ET1 = 0;    //关闭定时器1中断
+  23          }
+  24          */
+  25          
+  26          void Buzzer_Key_Beep() interrupt INTERRUPT_Timer_1_Overflow
+  27          {
+  28   1        Timer1_Reload();                                                                                      
+  29   1        if(--Number > 0){
+  30   2          Buzzer = ~Buzzer;
+  31   2        }else{
+  32   2          Buzzer_Init();
+  33   2        } 
+  34   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     90    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

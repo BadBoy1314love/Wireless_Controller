@@ -1,0 +1,18 @@
+"..\Output\Main.obj",
+"..\Output\hSch51.obj",
+"..\Output\Delay.obj",
+"..\Output\Download.obj",
+"..\Output\LCD1602_Clock.obj",
+"..\Output\Timer.obj",
+"..\Output\LCD1602_Menu.obj",
+"..\Output\LCD1602_Show.obj",
+"..\Output\ESP8266.obj",
+"..\Output\UART.obj",
+"..\Output\EEPROM_Application.obj",
+"..\Output\LCD1602.obj",
+"..\Output\Relay.obj",
+"..\Output\EEPROM.obj",
+"..\Output\EC11.obj",
+"..\Output\Buzzer.obj" 
+TO "..\Output\Wireless_Controller" 
+PRINT(".\Listings\Wireless_Controller.m51") RAMSIZE(256) 

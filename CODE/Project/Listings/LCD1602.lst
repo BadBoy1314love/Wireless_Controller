@@ -1,0 +1,168 @@
+C51 COMPILER V9.60.0.0   LCD1602                                                           08/02/2022 15:03:26 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE LCD1602
+OBJECT MODULE PLACED IN ..\Output\LCD1602.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE ..\Source\Device_Driver\LCD1602.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\Source
+                    -\Application;..\Source\Device_Driver;..\Source\System;D:\Keil\C51\INC\STC) DEBUG OBJECTEXTEND PRINT(.\Listings\LCD1602.l
+                    -st) TABS(2) OBJECT(..\Output\LCD1602.obj)
+
+line level    source
+
+   1          /******************************************************************************/
+   2          // 包含头文件
+   3          /******************************************************************************/
+   4          #include "config.h"
+   5          #include "LCD1602.h"
+   6          #include "delay.h"
+   7          /******************************************************************************/
+   8          // 函数名称：Lcd1602_Custom_Char 
+   9          // 输入参数：row-行 col-列 pos-CGRAM位置 *customValueTable-自定义字符数据
+  10          // 输出参数：无 
+  11          // 函数功能：显示自定义字符
+  12          /******************************************************************************/
+  13          void Lcd1602_Custom_Char(uint8 row, uint8 col, uint8 pos, uint8 *customValueTable){
+  14   1        uint8 i = 0;
+  15   1        for(i=0;i<8;i++){
+  16   2          Lcd1602_Write_Cmd(0x40+pos*8+i);
+  17   2          Lcd1602_Write_Data(*(customValueTable+i));
+  18   2        }
+  19   1        if(row==1){
+  20   2          Lcd1602_Write_Cmd(0x00+0x80+col-1);
+  21   2          Lcd1602_Write_Data(0x00+pos);
+  22   2        }else{
+  23   2          Lcd1602_Write_Cmd(0x40+0x80+col-1);
+  24   2          Lcd1602_Write_Data(0x00+pos); 
+  25   2        }
+  26   1      }
+  27          /******************************************************************************/
+  28          // 函数名称：Lcd1602_Show_String 
+  29          // 输入参数：row-行 col-列 *str-字符
+  30          // 输出参数：无 
+  31          // 函数功能：LCD1602显示字符
+  32          /******************************************************************************/
+  33          void Lcd1602_Show_String(uint8 row, uint8 col,uint8 *str){
+  34   1        uint8 *defaultValue = "parameter error" ;
+  35   1        switch(row){
+  36   2          case 1:
+  37   2              Lcd1602_Write_Cmd(0x00+0x80+col-1);//第一行第y个空格
+  38   2              while(*str!='\0'){
+  39   3                Lcd1602_Write_Data(*str);
+  40   3                str++;
+  41   3              }
+  42   2              break;  
+  43   2          case 2:
+  44   2              Lcd1602_Write_Cmd(0x40+0x80+col-1);//第二行第y个空格
+  45   2              while(*str!='\0'){
+  46   3                Lcd1602_Write_Data(*str);
+  47   3                str++;
+  48   3              }
+  49   2              break;
+  50   2      
+  51   2           default:
+  52   2                Lcd1602_Write_Cmd(0x00+0x80);//parameter error
+  53   2              while(*defaultValue!='\0'){
+C51 COMPILER V9.60.0.0   LCD1602                                                           08/02/2022 15:03:26 PAGE 2   
+
+  54   3                Lcd1602_Write_Data(*defaultValue);
+  55   3                defaultValue++;
+  56   3              }         
+  57   2        } 
+  58   1      }
+  59          
+  60          
+  61          /******************************************************************************/
+  62          // 函数名称：Lcd1602_Busy_Check 
+  63          // 输入参数：无
+  64          // 输出参数：无 
+  65          // 函数功能：LCD1602忙信号检查 
+  66          /******************************************************************************/
+  67          void Lcd1602_Busy_Check(void){
+  68   1        uint8 tmp;
+  69   1        lcdPort = 0xff;//一开始的时候，lcdPort设置成输入状态
+  70   1      
+  71   1        do{
+  72   2          RS = 0;
+  73   2          RW = 1;
+  74   2          EN = 0;
+  75   2          EN = 1;
+  76   2          _nop_();
+  77   2          _nop_();
+  78   2          tmp = lcdPort;
+  79   2          _nop_();
+  80   2          EN = 0;
+  81   2          _nop_();
+  82   2        }while(tmp&0x80); 
+  83   1      }
+  84          /******************************************************************************/
+  85          // 函数名称：Lcd1602_Init 
+  86          // 输入参数：无
+  87          // 输出参数：无 
+  88          // 函数功能：LCD1602初始化
+  89          /******************************************************************************/
+  90          void Lcd1602_Init(void){
+  91   1        Delay15ms();
+  92   1        Lcd1602_Write_Cmd(0x38);//写指令38H
+  93   1        Delay5ms(); 
+  94   1        Lcd1602_Write_Cmd(0x38);//显示模式设置  
+  95   1        Lcd1602_Write_Cmd(0x08);//显示关闭  
+  96   1        Lcd1602_Write_Cmd(0x01);//显示清屏  
+  97   1        Lcd1602_Write_Cmd(0x06);//显示光标移动设置  
+  98   1        Lcd1602_Write_Cmd(0x0c);//显示开及光标设置
+  99   1      }
+ 100          /******************************************************************************/
+ 101          // 函数名称：Lcd1602_Write_Cmd 
+ 102          // 输入参数：cmd-指令
+ 103          // 输出参数：无 
+ 104          // 函数功能：LCD1602写指令
+ 105          /******************************************************************************/
+ 106          void Lcd1602_Write_Cmd(uint8 cmd){
+ 107   1        Lcd1602_Busy_Check();
+ 108   1        RS = 0;
+ 109   1        RW = 0;
+ 110   1        EN = 0;
+ 111   1        lcdPort = cmd;
+ 112   1        _nop_();
+ 113   1        EN = 1;
+ 114   1        _nop_();
+ 115   1        EN = 0;
+C51 COMPILER V9.60.0.0   LCD1602                                                           08/02/2022 15:03:26 PAGE 3   
+
+ 116   1        _nop_();
+ 117   1        _nop_();
+ 118   1      }
+ 119          
+ 120          
+ 121          /******************************************************************************/
+ 122          // 函数名称：Lcd1602_Write_Data 
+ 123          // 输入参数：Data-数据
+ 124          // 输出参数：无 
+ 125          // 函数功能：LCD1602写数据
+ 126          /******************************************************************************/
+ 127          void Lcd1602_Write_Data(uint8 Data){
+ 128   1        Lcd1602_Busy_Check();
+ 129   1        RS = 1;
+ 130   1        RW = 0;
+ 131   1        EN = 0;
+ 132   1        lcdPort = Data;
+ 133   1        _nop_();
+ 134   1        EN = 1;
+ 135   1        _nop_();
+ 136   1        EN = 0;
+ 137   1        _nop_();
+ 138   1        _nop_();
+ 139   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    310    ----
+   CONSTANT SIZE    =     16    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      14
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

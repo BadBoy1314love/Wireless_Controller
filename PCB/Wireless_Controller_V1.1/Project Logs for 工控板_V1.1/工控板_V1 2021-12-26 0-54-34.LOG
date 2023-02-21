@@ -1,0 +1,123 @@
+Removed Pin From Net: NetName=NetJP4_1 Pin=R2-2
+Removed Pin From Net: NetName=NetJP4_2 Pin=R2-3
+Removed Pin From Net: NetName=NetJP4_3 Pin=R2-4
+Removed Pin From Net: NetName=NetJP5_6 Pin=R3-2
+Removed Pin From Net: NetName=NetJP5_5 Pin=R3-3
+Removed Pin From Net: NetName=NetJP5_4 Pin=R3-4
+Removed Pin From Net: NetName=NetJP5_3 Pin=R3-5
+Removed Pin From Net: NetName=NetJP5_2 Pin=R3-6
+Removed Pin From Net: NetName=NetJP5_1 Pin=R3-7
+Removed Pin From Net: NetName=NetLCD1_14 Pin=R8-2
+Removed Pin From Net: NetName=NetLCD1_13 Pin=R8-3
+Removed Pin From Net: NetName=NetLCD1_12 Pin=R8-4
+Removed Pin From Net: NetName=NetLCD1_11 Pin=R8-5
+Removed Pin From Net: NetName=NetLCD1_10 Pin=R8-6
+Removed Pin From Net: NetName=NetLCD1_9 Pin=R8-7
+Removed Pin From Net: NetName=NetLCD1_8 Pin=R8-8
+Removed Pin From Net: NetName=NetLCD1_7 Pin=R8-9
+Removed Pin From Net: NetName=GND Pin=SW2-1
+Removed Pin From Net: NetName=NetR5_4 Pin=SW2-2
+Removed Pin From Net: NetName=NetJP4_1 Pin=U1-1
+Removed Pin From Net: NetName=NetJP4_2 Pin=U1-2
+Removed Pin From Net: NetName=NetJP4_3 Pin=U1-3
+Removed Pin From Net: NetName=NetLCD1_7 Pin=U1-21
+Removed Pin From Net: NetName=NetLCD1_8 Pin=U1-22
+Removed Pin From Net: NetName=NetLCD1_9 Pin=U1-23
+Removed Pin From Net: NetName=NetLCD1_10 Pin=U1-24
+Removed Pin From Net: NetName=NetLCD1_11 Pin=U1-25
+Removed Pin From Net: NetName=NetLCD1_12 Pin=U1-26
+Removed Pin From Net: NetName=NetLCD1_13 Pin=U1-27
+Removed Pin From Net: NetName=NetLCD1_14 Pin=U1-28
+Removed Pin From Net: NetName=NetJP5_1 Pin=U1-34
+Removed Pin From Net: NetName=NetJP5_2 Pin=U1-35
+Removed Pin From Net: NetName=NetJP5_3 Pin=U1-36
+Removed Pin From Net: NetName=NetJP5_4 Pin=U1-37
+Removed Pin From Net: NetName=NetJP5_5 Pin=U1-38
+Removed Pin From Net: NetName=NetJP5_6 Pin=U1-39
+Change Component Footprint: Designator=JP4 Old Footprint=KF301-5.0-8P New Footprint=KF301-5.0-3P
+Change Component Comment : Designator=JP4 Old Comment=HDR-1X8 New Comment=HDR-1X3
+Change component parameters: Designator = "JP4" ("JP4"); Footprint = "KF301-5.0-8P"; UniqueID = "\OGUPFQEU" ("\OGUPFQEU")
+Change component parameters (AddParameter): Name = "BOM名称"; Value = "3P接插件"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "下单链接"; Value = "https://item.taobao.com/item.htm?ft=t&id=613637044352"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "淘宝ID"; Value = "小糖豆的小窝窝"; VariantName = "[No Variations]"
+Added Component: Designator=JP7(KF301-5.0-5P)
+Add component (AddParameter): Name = "BOM名称"; Value = "5P接插件"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "下单链接"; Value = "https://item.taobao.com/item.htm?ft=t&id=613637044352"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "淘宝ID"; Value = "小糖豆的小窝窝"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=NetJP5_1 Pin=R2-4
+Added Pin To Net: NetName=NetJP5_2 Pin=R2-5
+Added Pin To Net: NetName=NetJP5_3 Pin=R2-6
+Added Pin To Net: NetName=NetJP5_4 Pin=R2-7
+Added Pin To Net: NetName=NetJP5_5 Pin=R2-8
+Added Pin To Net: NetName=NetJP5_6 Pin=R2-9
+Added Pin To Net: NetName=NetLCD1_7 Pin=R3-2
+Added Pin To Net: NetName=NetLCD1_8 Pin=R3-3
+Added Pin To Net: NetName=NetLCD1_9 Pin=R3-4
+Added Pin To Net: NetName=NetLCD1_10 Pin=R3-5
+Added Pin To Net: NetName=NetLCD1_11 Pin=R3-6
+Added Pin To Net: NetName=NetLCD1_12 Pin=R3-7
+Added Pin To Net: NetName=NetLCD1_13 Pin=R3-8
+Added Pin To Net: NetName=NetLCD1_14 Pin=R3-9
+Added Pin To Net: NetName=NetJP4_1 Pin=R5-7
+Added Pin To Net: NetName=NetJP4_2 Pin=R5-8
+Added Pin To Net: NetName=NetJP4_3 Pin=R5-9
+Added Pin To Net: NetName=NetR5_4 Pin=SW2-1
+Added Pin To Net: NetName=GND Pin=SW2-2
+Added Pin To Net: NetName=NetJP5_1 Pin=U1-3
+Added Pin To Net: NetName=NetJP5_2 Pin=U1-4
+Added Pin To Net: NetName=NetJP5_3 Pin=U1-5
+Added Pin To Net: NetName=NetJP5_4 Pin=U1-6
+Added Pin To Net: NetName=NetJP5_5 Pin=U1-7
+Added Pin To Net: NetName=NetJP5_6 Pin=U1-8
+Added Pin To Net: NetName=NetJP4_1 Pin=U1-15
+Added Pin To Net: NetName=NetJP4_2 Pin=U1-16
+Added Pin To Net: NetName=NetJP4_3 Pin=U1-17
+Added Pin To Net: NetName=NetLCD1_14 Pin=U1-32
+Added Pin To Net: NetName=NetLCD1_13 Pin=U1-33
+Added Pin To Net: NetName=NetLCD1_12 Pin=U1-34
+Added Pin To Net: NetName=NetLCD1_11 Pin=U1-35
+Added Pin To Net: NetName=NetLCD1_10 Pin=U1-36
+Added Pin To Net: NetName=NetLCD1_9 Pin=U1-37
+Added Pin To Net: NetName=NetLCD1_8 Pin=U1-38
+Added Pin To Net: NetName=NetLCD1_7 Pin=U1-39
+Added Pin To Net: NetName=E Pin=LCD1-6
+Added Pin To Net: NetName=E Pin=R8-2
+Added Pin To Net: NetName=E Pin=U1-28
+Added Net: Name=E
+Added Pin To Net: NetName=NetJP7_1 Pin=JP7-1
+Added Pin To Net: NetName=NetJP7_1 Pin=R8-9
+Added Pin To Net: NetName=NetJP7_1 Pin=U1-21
+Added Net: Name=NetJP7_1
+Added Pin To Net: NetName=NetJP7_2 Pin=JP7-2
+Added Pin To Net: NetName=NetJP7_2 Pin=R8-8
+Added Pin To Net: NetName=NetJP7_2 Pin=U1-22
+Added Net: Name=NetJP7_2
+Added Pin To Net: NetName=NetJP7_3 Pin=JP7-3
+Added Pin To Net: NetName=NetJP7_3 Pin=R8-7
+Added Pin To Net: NetName=NetJP7_3 Pin=U1-23
+Added Net: Name=NetJP7_3
+Added Pin To Net: NetName=NetJP7_4 Pin=JP7-4
+Added Pin To Net: NetName=NetJP7_4 Pin=R8-6
+Added Pin To Net: NetName=NetJP7_4 Pin=U1-24
+Added Net: Name=NetJP7_4
+Added Pin To Net: NetName=NetJP7_5 Pin=JP7-5
+Added Pin To Net: NetName=NetJP7_5 Pin=R8-5
+Added Pin To Net: NetName=NetJP7_5 Pin=U1-25
+Added Net: Name=NetJP7_5
+Added Pin To Net: NetName=NetR2_2 Pin=R2-2
+Added Pin To Net: NetName=NetR2_2 Pin=R9-2
+Added Pin To Net: NetName=NetR2_2 Pin=U1-1
+Added Net: Name=NetR2_2
+Added Pin To Net: NetName=NetR2_3 Pin=R2-3
+Added Pin To Net: NetName=NetR2_3 Pin=R4-2
+Added Pin To Net: NetName=NetR2_3 Pin=U1-2
+Added Net: Name=NetR2_3
+Added Pin To Net: NetName=R/W Pin=LCD1-5
+Added Pin To Net: NetName=R/W Pin=R8-3
+Added Pin To Net: NetName=R/W Pin=U1-27
+Added Net: Name=R/W
+Added Pin To Net: NetName=RS Pin=LCD1-4
+Added Pin To Net: NetName=RS Pin=R8-4
+Added Pin To Net: NetName=RS Pin=U1-26
+Added Net: Name=RS
+Added Member To Class: ClassName=工控板_V1.1 Member=Component JP7 HDR-1X5

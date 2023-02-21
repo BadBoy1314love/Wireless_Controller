@@ -1,0 +1,1 @@
+"..\Source\Device_Driver\LCD1602.c" OPTIMIZE (9,SPEED) BROWSE INCDIR(..\Source\Application;..\Source\Device_Driver;..\Source\System;D:\Keil\C51\INC\STC) DEBUG OBJECTEXTEND PRINT(.\Listings\LCD1602.lst) TABS (2) OBJECT(..\Output\LCD1602.obj)

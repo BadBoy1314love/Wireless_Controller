@@ -1,0 +1,48 @@
+C51 COMPILER V9.60.0.0   LCD1602_SHOW                                                      07/31/2022 23:33:17 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE LCD1602_SHOW
+OBJECT MODULE PLACED IN ..\Output\LCD1602_Show.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE ..\Source\Application\LCD1602_Show.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\Sou
+                    -rce\Application;..\Source\Device_Driver;..\Source\System;D:\Keil\C51\INC\STC) DEBUG OBJECTEXTEND PRINT(.\Listings\LCD160
+                    -2_Show.lst) TABS(2) OBJECT(..\Output\LCD1602_Show.obj)
+
+line level    source
+
+   1          #include "Config.h"
+   2          #include "LCD1602_Show.h"
+   3          #include "LCD1602_Menu.h"
+   4          #include "LCD1602_Clock.h"
+   5          
+   6          u8 LCD1602_Show_State = 0; //LCD1602µ±Ç°ÏÔÊ¾×´Ì¬
+   7          
+   8          void LCD1602_Show_Update(void)
+   9          {
+  10   1        switch(LCD1602_Show_State)
+  11   1        {
+  12   2          case 0:
+  13   2            LCD1602_Clock_Update();
+  14   2            break;
+  15   2          case 1:
+  16   2            LCD1602_DateTime_Update();
+  17   2            break;
+  18   2          case 2:
+  19   2            LCD1602_Menu_Update();
+  20   2            break;
+  21   2        }
+  22   1      }
+  23          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     22    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

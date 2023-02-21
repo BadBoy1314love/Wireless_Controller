@@ -1,0 +1,319 @@
+C51 COMPILER V9.60.0.0   HSCH51                                                            08/02/2022 15:11:06 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE HSCH51
+OBJECT MODULE PLACED IN ..\Output\hSch51.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE ..\Source\System\hSch51.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\Source\Applica
+                    -tion;..\Source\Device_Driver;..\Source\System;D:\Keil\C51\INC\STC) DEBUG OBJECTEXTEND PRINT(.\Listings\hSch51.lst) TABS(
+                    -2) OBJECT(..\Output\hSch51.obj)
+
+line level    source
+
+   1          /*------------------------------------------------------------------*-
+   2          
+   3             hSCH51.C (v1.00) 
+   4          
+   5          -*------------------------------------------------------------------*/
+   6          
+   7          #include "Config.h"
+   8          #include "hSch51.h"
+   9          
+  10          // ------ 公共变量定义 ------------------------------
+  11          
+  12          sTaskH idata hSCH_tasks_G[hSCH_MAX_TASKS];  //任务数组
+  13          
+  14          
+  15          /******************************************************************************/
+  16          // 混合式调度器初始化函数
+  17          // 函数名称：hSCH_Init_T0
+  18          // 输入参数：无
+  19          // 输出参数：无 
+  20          // 函数功能：初始化调度器数据结构，并按要求的速率设置计时器中断
+  21          //           在使用调度程序之前，必须调用此函数。
+  22          /******************************************************************************/
+  23          void hSCH_Init_T0(void) 
+  24          {
+  25   1        tByte i;
+  26   1        
+  27   1        for (i = 0; i < hSCH_MAX_TASKS; i++) 
+  28   1        {
+  29   2           hSCH_Delete_Task(i);
+  30   2        }
+  31   1        
+  32   1         //现在设置定时器0，为16位手动重装模式
+  33   1         // 当前使用11.0592M晶振
+  34   1         // 所需的定时器0溢出时间为0.001秒（1毫秒）
+  35   1        
+  36   1        AUXR |= 0x80;   //定时器时钟1T模式
+  37   1        TMOD &= 0xF0;   //设置定时器模式
+  38   1        TMOD |= 0x01;   //设置定时器模式
+  39   1        TL0 = 0xCD;   //设置定时初始值
+  40   1        TH0 = 0xD4;   //设置定时初始值 
+  41   1        TF0 = 0;    //清除TF0标志
+  42   1        TR0 = 1;    //定时器0开始计时
+  43   1      
+  44   1      }
+  45          
+  46          
+  47          /******************************************************************************/
+  48          // 混合式调度器启动函数
+  49          // 函数名称：hSCH_Start()
+  50          // 输入参数：无
+  51          // 输出参数：无 
+  52          // 函数功能：通过启用中断来启动计划程序
+  53          // 注意：通常在添加所有常规任务后调用，使任务保持同步。
+C51 COMPILER V9.60.0.0   HSCH51                                                            08/02/2022 15:11:06 PAGE 2   
+
+  54          // 注意：只应启用调度程序中断！！！
+  55          /******************************************************************************/
+  56          void hSCH_Start(void) 
+  57             {
+  58   1         EA = 1;
+  59   1         }
+  60          
+  61          /******************************************************************************/
+  62          // 混合式调度器刷新函数
+  63          // 函数名称：hSCH_Update()
+  64          // 输入参数：无
+  65          // 输出参数：无 
+  66          // 函数功能：
+  67          // 说明：这是调度器的中断服务程序。hSCH_Init_T0()中的定时器设置决定了
+  68          //       调用频率，这个版本是由定时器0中断出发的，定时器0为手动重装模式  
+  69          /******************************************************************************/   
+  70          void hSCH_Update(void) interrupt INTERRUPT_Timer_0_Overflow
+  71          {
+  72   1        tByte Index;
+  73   1      
+  74   1        TF0 = 0;     // 需要手动清除定时器0溢出标志位
+  75   1        TR0 = 0;
+  76   1        TL0 = 0xCD;   //设置定时初始值
+  77   1        TH0 = 0xD4;   //设置定时初始值
+  78   1        TR0 = 1;
+  79   1        
+  80   1         //注：计算单位为*时标*（非毫秒）
+  81   1        for (Index = 0; Index < hSCH_MAX_TASKS; Index++)
+  82   1        {
+  83   2           if (hSCH_tasks_G[Index].pTask) //检查这里是否有任务
+  84   2            {
+  85   3              if (hSCH_tasks_G[Index].Delay == 0)  //任务需要运行
+  86   3                {
+  87   4                  if (hSCH_tasks_G[Index].Co_op)  //如果是一个合作式任务
+  88   4                   {
+  89   5                     hSCH_tasks_G[Index].RunMe += 1;  //RunMe标志+1
+  90   5                   }
+  91   4                   else   //否则如果为抢占式任务，立即运行任务
+  92   4                   {
+  93   5                     (*hSCH_tasks_G[Index].pTask)();  // 运行任务
+  94   5                     hSCH_tasks_G[Index].RunMe -= 1;   // RunMe标志复位/-1
+  95   5                     
+  96   5                     if (hSCH_tasks_G[Index].Period == 0)    // 周期性任务将再次运行
+  97   5                      {                                      // 如果是一个单次任务，将它从数组中删除
+  98   6                        hSCH_tasks_G[Index].pTask  = 0;
+  99   6                      }
+ 100   5                   }
+ 101   4                  if (hSCH_tasks_G[Index].Period)  // 调度定期任务再次运行
+ 102   4                   {
+ 103   5                     hSCH_tasks_G[Index].Delay = hSCH_tasks_G[Index].Period;
+ 104   5                   }
+ 105   4                  }
+ 106   3               else    // 任务还没有准备好运行，Delay-1
+ 107   3                  {
+ 108   4                  hSCH_tasks_G[Index].Delay -= 1;
+ 109   4                  }
+ 110   3               }         
+ 111   2            }
+ 112   1         }   
+ 113          
+ 114          /******************************************************************************/
+ 115          // 混合式调度器调度函数
+C51 COMPILER V9.60.0.0   HSCH51                                                            08/02/2022 15:11:06 PAGE 3   
+
+ 116          // 函数名称：hSCH_Dispatch_Tasks()
+ 117          // 输入参数：无
+ 118          // 输出参数：无 
+ 119          // 函数功能：
+ 120          // 说明：这是“调度”函数。当一个任务函数需要运行时，hSCH_Dispatch_Tasks()将运�
+             -��它
+ 121             //       这个函数需要被主循环重复调用
+ 122          /******************************************************************************/   
+ 123          void hSCH_Dispatch_Tasks(void) 
+ 124          {
+ 125   1        tByte Index;
+ 126   1        
+ 127   1        for (Index = 0; Index < hSCH_MAX_TASKS; Index++)  // 调度运行下一个任务（如果有）
+ 128   1           {
+ 129   2           //只调度合作式任务
+ 130   2           if ((hSCH_tasks_G[Index].Co_op) && (hSCH_tasks_G[Index].RunMe > 0)) 
+ 131   2             {
+ 132   3              (*hSCH_tasks_G[Index].pTask)();  //运行任务
+ 133   3               hSCH_tasks_G[Index].RunMe -= 1;   //复位/-1RunMe标志
+ 134   3      
+ 135   3               //周期性任务将自动重新运行
+ 136   3               // -如果这是一个“单次”任务，从数组中删除它
+ 137   3               if (hSCH_tasks_G[Index].Period == 0)
+ 138   3                  {
+ 139   4                  //比通过调用来删除任务更快
+ 140   4                  hSCH_tasks_G[Index].pTask = 0;
+ 141   4                  }
+ 142   3              }
+ 143   2            }
+ 144   1       }
+ 145          
+ 146          /******************************************************************************/
+ 147          // 混合式调度器任务添加函数
+ 148          // 函数名称：hSCH_Add_Task()
+ 149          // 输入参数：void (code* Fn_p)(),tWord Del,tWord Per,bit Co_op
+ 150          // 输出参数：无 
+ 151          // 函数功能：使任务(函数)以定期间隔或在用户定义的延迟之后执行
+ 152          // 说明：这是“调度”函数。当一个任务函数需要运行时，hSCH_Dispatch_Tasks()将运�
+             -��它
+ 153          //       这个函数需要被主循环重复调用
+ 154          /******************************************************************************/   
+ 155          /*------------------------------------------------------------------*-
+ 156            Fn_P  - 要调度的函数的名称。
+ 157                    注意:所有计划函数必须是'void, void' 
+ 158                    也就是说，它们必须不带参数，并且有
+ 159                    一个void返回类型。
+ 160                             
+ 161            Del   - 任务第一次执行前的间隔(TICKS)
+ 162          
+ 163            Per   - 如果'PERIOD'为0，函数只被调用一次，
+ 164                    时间由'DELAY'决定。如果PERIOD不为零，
+ 165                    然后以一定的间隔重复调用该函数
+ 166                    由PERIOD的值决定(参见下面的示例
+ 167                    这应该有助于澄清这一点)。
+ 168          
+ 169            Co-op - 如果是合作式任务则设置（1）; 如果是抢占式任务则设置（0）
+ 170          
+ 171            返回值:  
+ 172          
+ 173            返回在任务数组中添加任务的位置。
+ 174            如果返回值是SCH_MAX_TASKS，那么任务不能添加到数组中(因为空间不足)。
+ 175            如果返回值是< SCH_MAX_TASKS，则任务被成功添加。
+C51 COMPILER V9.60.0.0   HSCH51                                                            08/02/2022 15:11:06 PAGE 4   
+
+ 176          
+ 177            注意:这个返回值可能是必需的，如果一个任务随后要被删除-参见SCH_Delete_Task()�
+             -��
+ 178          
+ 179          
+ 180            EXAMPLES:
+ 181          
+ 182            Task_ID = hSCH_Add_Task(Do_X,1000,0,0);
+ 183            Causes the function Do_X() to be executed once after 1000 ticks.
+ 184            (Pre-emptive task)          
+ 185          
+ 186            Task_ID = hSCH_Add_Task(Do_X,0,1000,1);
+ 187            Causes the function Do_X() to be executed regularly, every 1000 ticks.            
+ 188            (co-operative task)          
+ 189          
+ 190            Task_ID = hSCH_Add_Task(Do_X,300,1000,0);
+ 191            Causes the function Do_X() to be executed regularly, every 1000 ticks.
+ 192            Task will be first executed at T = 300 ticks, then 1300, 2300, etc.            
+ 193            (Pre-emptive task)          
+ 194           
+ 195          -*------------------------------------------------------------------*/
+ 196          tByte hSCH_Add_Task(void (code* Fn_p)(), // 任务函数指针
+ 197                             tWord   Del,    // 直到任务第一次运行时的时标数 
+ 198                             tWord   Per,    // 重复运行之间的时标数
+ 199                             bit     Co_op)  // 合作式任务（1） / 抢占式任务（0）
+ 200             {
+ 201   1         tByte Index = 0;
+ 202   1         
+ 203   1         // First find a gap in the array (if there is one)
+ 204   1         while ((hSCH_tasks_G[Index].pTask != 0) && (Index < hSCH_MAX_TASKS))
+ 205   1            {
+ 206   2            Index++;
+ 207   2            } 
+ 208   1         
+ 209   1         // Have we reached the end of the list?   
+ 210   1         if (Index == hSCH_MAX_TASKS)
+ 211   1            {
+ 212   2            return hSCH_MAX_TASKS;  
+ 213   2            }
+ 214   1            
+ 215   1         // 如果能运行到这里，说明任务队列里有空间
+ 216   1         hSCH_tasks_G[Index].pTask = Fn_p;
+ 217   1         hSCH_tasks_G[Index].Delay  = Del;
+ 218   1         hSCH_tasks_G[Index].Period = Per;
+ 219   1         hSCH_tasks_G[Index].Co_op = Co_op;
+ 220   1         hSCH_tasks_G[Index].RunMe  = 0;
+ 221   1      
+ 222   1         return Index; //返回任务的位置(以便以后删除)
+ 223   1         }
+ 224          
+ 225          /******************************************************************************/
+ 226          // 混合式调度器任务删除函数
+ 227          // 函数名称：hSCH_Delete_Task()
+ 228          // 输入参数：tByte Task_index
+ 229          // 输出参数：无 
+ 230          // 函数功能：从调度程序中删除任务
+ 231          // 说明：从调度程序中删除任务。注意，这将从内存中删除相关函数:
+ 232          //       它只是意味着它不再被调度器调用。
+ 233          /******************************************************************************/   
+ 234          /*------------------------------------------------------------------*-
+ 235          
+ 236            参数:   Task_index - 任务索引.  由 hSCH_Add_Task(). 提供
+C51 COMPILER V9.60.0.0   HSCH51                                                            08/02/2022 15:11:06 PAGE 5   
+
+ 237          
+ 238            返回值:  RETURN_ERROR 或 RETURN_NORMAL
+ 239          
+ 240          -*------------------------------------------------------------------*/
+ 241          bit hSCH_Delete_Task(tByte Task_index) 
+ 242             {
+ 243   1         bit Return_code;
+ 244   1      
+ 245   1         if (hSCH_tasks_G[Task_index].pTask == 0)  //这里没有任务
+ 246   1            {
+ 247   2            Return_code = 1; //RETURN_ERROR
+ 248   2            }
+ 249   1         else
+ 250   1            {
+ 251   2            Return_code = 0; //RETURN_NORMAL
+ 252   2            }      
+ 253   1         
+ 254   1         hSCH_tasks_G[Task_index].pTask   = 0;
+ 255   1         hSCH_tasks_G[Task_index].Delay   = 0;
+ 256   1         hSCH_tasks_G[Task_index].Period  = 0;
+ 257   1         hSCH_tasks_G[Task_index].RunMe   = 0;
+ 258   1      
+ 259   1         return Return_code;       // 返回状态
+ 260   1         }
+ 261             
+ 262             
+ 263          
+ 264          /******************************************************************************/
+ 265          // 函数名称：hSCH_Run
+ 266          // 输入参数：无
+ 267          // 输出参数：无 
+ 268          // 函数功能：启用作为调度器时基的T0中断
+ 269          /******************************************************************************/     
+ 270          void hSCH_Run(void)
+ 271          {
+ 272   1        ET0   = 1;  // 开启定时器0中断
+ 273   1      }
+ 274          /******************************************************************************/
+ 275          // 函数名称：hSCH_Pause
+ 276          // 输入参数：无
+ 277          // 输出参数：无 
+ 278          // 函数功能：禁用用作为调度器时基的T0中断
+ 279          /******************************************************************************/
+ 280          void hSCH_Pause(void)
+ 281          {
+ 282   1        ET0   = 0;  // 禁用定时器0中断
+ 283   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    511    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       5
+   IDATA SIZE       =     88    ----
+   BIT SIZE         =   ----       2
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
